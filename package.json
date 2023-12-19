@@ -1,5 +1,5 @@
 {
-  "name": "copy-hub-t3",
+  "name": "livingbyte",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -24,7 +24,7 @@
     "@trpc/server": "^10.37.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "drizzle-orm": "^0.28.5",
+    "drizzle-orm": "^0.28.6",
     "next": "^14.0.0",
     "next-auth": "^4.24.4",
     "next-themes": "^0.2.1",

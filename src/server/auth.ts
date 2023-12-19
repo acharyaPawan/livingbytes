@@ -11,7 +11,7 @@ import GithubProvider from "next-auth/providers/github";
 
 import { env } from "~/env.mjs";
 import { db } from "~/server/db";
-import { pgTable, users } from "~/server/db/schema";
+import { users } from "~/server/db/schema";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -91,18 +91,19 @@ export const authOptions: NextAuthOptions = {
       };
     },
     async signIn({ user, account, profile }) {
+      
       console.log(user)
       console.log(account)
       console.log(profile)
 
       const isAllowedToSignIn = true; // You can add your own login logic here
       if (isAllowedToSignIn) {
-        return `/`; // Redirect to a specific page after sign in
+        return true; // Redirect to a specific page after sign in
       } else {
         // Return false to display a default error message
         return false;
       }
-    },
+    }
   },
   session: {
     strategy: "jwt",
@@ -111,7 +112,7 @@ export const authOptions: NextAuthOptions = {
     secret: env.NEXTAUTH_SECRET,
   },
   secret: env.NEXTAUTH_SECRET,
-  adapter: DrizzleAdapter(db, pgTable),
+  adapter: DrizzleAdapter(db),
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,

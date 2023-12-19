@@ -4,9 +4,9 @@ import {
   primaryKey,
   integer,
   pgTableCreator,
-  bigint,
-  varchar,
+  PgTable,
   pgEnum,
+  pgTable,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "@auth/core/adapters";
 
@@ -18,7 +18,7 @@ import type { AdapterAccount } from "@auth/core/adapters";
  */
 
 // Change name of copy_hub_t3 to create prefixes for tables:
-export const pgTable = pgTableCreator((name) => `copy_hub_t3_${name}`);
+// export const pgTable = pgTableCreator((name) => `${name}`);
 
 export const roleEnum = pgEnum('role', ["USER", "OWNER"])
 
