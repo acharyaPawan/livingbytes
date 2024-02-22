@@ -9,9 +9,10 @@ import {
 import { type DefaultJWT, type JWT } from "next-auth/jwt";
 import GithubProvider from "next-auth/providers/github";
 
-import { env } from "~/env.mjs";
-import { db } from "~/server/db";
-import { users } from "~/server/db/schema";
+import { env } from "@/env.mjs";
+import db from "./db";
+import { user } from "@/server/db/schema";
+import { Adapter } from "next-auth/adapters";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -71,8 +72,8 @@ export const authOptions: NextAuthOptions = {
     jwt: async ({ token }: { token: JWT }) => {
       const userCheck = await db
         .select()
-        .from(users)
-        .where(sql`${users.email} = ${token.email}`);
+        .from(user)
+        .where(sql`${user.email} = ${token.email}`);
       const dbUser = userCheck[0];
 
       if (!dbUser) {
@@ -88,7 +89,7 @@ export const authOptions: NextAuthOptions = {
         name: dbUser.name,
         picture: dbUser.image,
         sub: token.sub,
-      };
+      } as JWT;
     },
     async signIn({ user, account, profile }) {
       
@@ -112,7 +113,7 @@ export const authOptions: NextAuthOptions = {
     secret: env.NEXTAUTH_SECRET,
   },
   secret: env.NEXTAUTH_SECRET,
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter(db) as Adapter,
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,

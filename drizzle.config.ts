@@ -1,13 +1,13 @@
 import { type Config } from "drizzle-kit";
 
-import { env } from "~/env.mjs";
+import { env } from "./src/env.mjs";
 
 export default {
   schema: "./src/server/db/schema.ts",
+  out: "./drizzle",
   driver: "pg",
   verbose: true,
   dbCredentials: {
-    connectionString: env.DATABASE_URL,
+    connectionString: "postgresql://pawanacharya101:y3xbVTF8nGQY@ep-mute-hall-07760410-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require",
   },
-  tablesFilter: ["copy_hub_t3_*"],
 } satisfies Config;
