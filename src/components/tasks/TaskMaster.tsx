@@ -1,19 +1,18 @@
-"use client"
-
-import { useState } from "react";
 import RenderCategorizedTasks from "./RenderCategorizedTasks";
 
 
 import dummyChoresList from "@/dummydata/dummydata";
 import { Button } from "../ui/button";
 import { AddNew } from "./AddNew";
+import { api } from "@/trpc/server";
+import { Category } from "@/types/types";
   
   
   
 
-const TaskMaster = () => {
-    const [dailyChores, setDailyChores] = useState([])
-    
+ const TaskMaster = async () => {
+
+    const data =  await api.task.getCategorizedTasks.query()
 
   return (
     <div>
@@ -21,8 +20,8 @@ const TaskMaster = () => {
       <h1 className="font-serif text-2xl">TaskMaster</h1>
     </div>
     <div>Whats Today?</div>
-    <div>
-        {dummyChoresList.map(categorifiedList => <RenderCategorizedTasks key={categorifiedList.id} category={categorifiedList} handleDelete={() => console.log('Category Deleted.')} />)}
+    <div className="mt-8">
+        {data.map(categorifiedList => <RenderCategorizedTasks key={categorifiedList?.categoryid as number} category={categorifiedList as Category}  />)}
     </div>
     <div>
       <AddNew />

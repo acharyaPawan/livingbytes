@@ -1,4 +1,4 @@
-// "use client";
+"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
@@ -32,6 +32,8 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { z } from "zod";
 import { createNewTask } from "@/app/actions";
+import { revalidatePath } from "next/cache";
+import { useRouter } from "next/navigation";
 
 const PRIORITYENUM = [
   "High",
@@ -74,6 +76,7 @@ const CATEGORYLIST = [
 export type formdata =  z.infer<typeof formSchema>
 
 export function AddNewForm({className, closeFun}: {className?: string, closeFun: () => void}) {
+  const router = useRouter()
 
   const [isPending, startTransition] = useTransition();
 
@@ -102,6 +105,7 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
     startTransition(async () => {
       const response = await createNewTask(values);
       closeFun()
+      router.refresh();
     });
 
     toast({

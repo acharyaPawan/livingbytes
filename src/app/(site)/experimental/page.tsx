@@ -10,7 +10,7 @@ import { api, client } from "@/trpc/react";
 import {  useEffect, useState } from "react";
 import { TRPCError } from "@trpc/server";
 
-export default  function Experimental() {
+export default async function Experimental() {
   const {data, isLoading, error} =  api.post.hello.useQuery({text: 'Pawan'})
   // const hello =  api.post.hello.query({ text: "from tRPC" });//Original 
   // const session = await getServerAuthSession();

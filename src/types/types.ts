@@ -5,65 +5,57 @@ export type ViewAsType = "Checkbox" | "Status";
 
 //Priority number give it values multiple of 10 within reange of 100.
 
-export type SubtaskType = {
+export interface Tracker {
   id: number;
   title: string;
-  status: TaskStatus;
-  description?: string;
-  subtasks?: SubtaskType[];
-  priorityLabel?: string;
+  frequency: string;
+  createdOn: Date;
+}
+
+export interface Subtask {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
   priority: number;
-  scheduled?: {
-    deploymentSchedule: Date;
-  };
   locked: boolean;
   flexible: boolean;
-  track?: {
-    trackerId: number;
-    trackerTitle: string;
-    trackerFrequency: TrackerFrequency;
-  };
+  priorityLabel: string;
   createdOn: Date;
   expiresOn: Date;
-  completedOn?: Date;
-  viewAs: ViewAsType;
-  SpecialLabels?: string[];
-  remark?: string;
-};
+  completedOn: Date;
+  viewAs: string;
+  specialLabels: string[];
+  remark: string;
+  tracker: Tracker[];
+}
 
-export type TaskType = {
+export interface Task {
   id: number;
   title: string;
-  status: TaskStatus;
-  description?: string;
-  subtasks?: SubtaskType[];
-  priorityLabel?: string;
+  description: string;
+  status: string;
   priority: number;
-  scheduled?: {
-    deploymentSchedule: Date;
-  };
   locked: boolean;
   flexible: boolean;
-  track?: {
-    trackerId: number;
-    trackerTitle: string;
-    trackerFrequency: TrackerFrequency;
-  };
+  priorityLabel: string;
   createdOn: Date;
   expiresOn: Date;
-  completedOn?: Date;
-  viewAs: ViewAsType;
-  SpecialLabels?: string[];
-  remark?: string;
-};
+  completedOn: Date;
+  viewAs: string;
+  specialLabels: string[];
+  remark: string;
+  subtasks: Subtask[];
+  tracker: Tracker[];
+}
 
-export type CategoryType = {
-  id: number;
-  title: string;
-  tasks?: TaskType[];
-  priority: number;
-  labels?: string[];
-  remark?:string;
-  createdOn: Date;
-  description?: string;
-};
+export interface Category {
+  categoryid: number;
+  categoryname: string;
+  categorydescription: string;
+  categorypriority: number;
+  categorylabels: string;
+  categoryremark: string;
+  categorycreatedOn: Date;
+  tasks: Task[];
+}
