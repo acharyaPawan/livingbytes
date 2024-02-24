@@ -25,8 +25,10 @@ import {
 } from "@/components/ui/drawer"
 import { AddNewForm } from "./AddNewForm"
 import { ScrollArea } from "../ui/scroll-area"
+import { EditTaskForm } from "./EditTaskForm"
+import { Task } from "@/types/types"
 
-export function AddNew() {
+export function EditTask({data}: {data: Task}) {
   const [open, setOpen] = React.useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
   
@@ -34,16 +36,16 @@ export function AddNew() {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline">Edit Task</Button>
+          <Button variant="outline">Add New</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px] h-2/3 overflow-y-scroll">
           <DialogHeader>
             <DialogTitle>Add New</DialogTitle>
             <DialogDescription>
-              Make changes to your profile here. Click save when you're done.
+              Make changes to your task details here. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <AddNewForm closeFun={() => {setOpen(false)}}/>
+          <EditTaskForm closeFun={() => {setOpen(false)}} data={data}/>
         </DialogContent>
       </Dialog>
     )
@@ -52,14 +54,14 @@ export function AddNew() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline">Edit Task</Button>
+        <Button variant="outline">Edit Profile</Button>
       </DrawerTrigger>
       <DrawerContent className="h-5/6">
       <ScrollArea className='h-screen'>
         <DrawerHeader className="text-left">
-          <DrawerTitle>Add New</DrawerTitle>
+          <DrawerTitle>Edit Task</DrawerTitle>
           <DrawerDescription>
-            Make changes to your profile here. Click save when you're done.
+            Make changes to your tasks details here. Click save when you're done.
           </DrawerDescription>
         </DrawerHeader>
         <AddNewForm closeFun={() => setOpen(false)} className="px-4" />

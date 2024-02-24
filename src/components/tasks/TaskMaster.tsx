@@ -1,8 +1,5 @@
 import RenderCategorizedTasks from "./RenderCategorizedTasks";
 
-
-import dummyChoresList from "@/dummydata/dummydata";
-import { Button } from "../ui/button";
 import { AddNew } from "./AddNew";
 import { api } from "@/trpc/server";
 import { Category } from "@/types/types";

@@ -5,6 +5,9 @@ import React from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { formatTimeDifference } from '@/lib/utils';
+import { AddNew } from './AddNew';
+import { useDataStore } from '@/hooks/use-modal-store';
+import { EditTask } from './EditTask';
 
 type TaskItemProps = {
     task: Task;
@@ -38,9 +41,9 @@ type TaskItemProps = {
               <span>{task.priorityLabel}</span>
               {task.locked && <span>Locked</span>}
               {task.tracker && <span>Tracking</span>}
-              {task.specialLabels && <span>{task.specialLabels[0]}</span>}
+              {task.specialLabels && <span className='bold'>{task.specialLabels[0]}</span>}
               {task.remark && <span className='dark:text-green-200 text-green-950'>{task.remark}</span>}
-              <span>Edit</span>
+              <span><EditTask data={task}/></span>
               <span>. . .</span>
             </div>
             {/* Check if there are subtasks and render accordingly */}
@@ -142,6 +145,20 @@ const RenderCategorizedTasks: React.FC<RenderCategorizedTasksProps> = ({ categor
       ))}
       </div>
     </div>
+  );
+};
+
+interface RenderCategorizes {
+  category: Category[];
+}
+
+const RenderCategories: React.FC<RenderCategorizes> = ({ category }) => {
+  const {categorizedTasks, setCategorizedTasks} = useDataStore()
+  setCategorizedTasks(category)
+  return (
+      <div>
+      {category.map(categorifiedList => <RenderCategorizedTasks key={categorifiedList?.categoryid as number} category={categorifiedList as Category}  />)}
+      </div>
   );
 };
 
