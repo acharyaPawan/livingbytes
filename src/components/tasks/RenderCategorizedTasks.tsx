@@ -11,10 +11,11 @@ import { EditTask } from './EditTask';
 
 type TaskItemProps = {
     task: Task;
-    handleDelete: (taskId: number) => void;
+    categoryName: string;
+    handleDelete: (taskId: string) => void;
   };
   
-  const TaskItem: React.FC<TaskItemProps> = ({ task, handleDelete }) => {
+  const TaskItem: React.FC<TaskItemProps> = ({ task,categoryName, handleDelete }) => {
     const renderTaskContent = () => {
       // Implement logic to render task content based on viewAs
       // Check if the viewAs is Checkbox and render accordingly
@@ -43,7 +44,7 @@ type TaskItemProps = {
               {task.tracker && <span>Tracking</span>}
               {task.specialLabels && <span className='bold'>{task.specialLabels[0]}</span>}
               {task.remark && <span className='dark:text-green-200 text-green-950'>{task.remark}</span>}
-              <span><EditTask data={task}/></span>
+              <span><EditTask data={task} categoryName={categoryName}/></span>
               <span>. . .</span>
             </div>
             {/* Check if there are subtasks and render accordingly */}
@@ -65,7 +66,7 @@ type TaskItemProps = {
 
   type SubTaskItemProps = {
     task: Subtask;
-    handleDelete: (taskId: number) => void;
+    handleDelete: (taskId: string) => void;
   };
   
   const SubTaskItem: React.FC<SubTaskItemProps> = ({ task, handleDelete }) => {
@@ -132,7 +133,7 @@ type TaskItemProps = {
 
 type RenderCategorizedTasksProps = {
   category: Category;
-  handleDelete?: (taskId: number) => void;
+  handleDelete?: (taskId: string) => void;
 };
 
 const RenderCategorizedTasks: React.FC<RenderCategorizedTasksProps> = ({ category }) => {
@@ -141,7 +142,7 @@ const RenderCategorizedTasks: React.FC<RenderCategorizedTasksProps> = ({ categor
       <CategoryHeader title={category.categoryname} description={category.categorydescription} />
       <div className='m-4 ml-8 flex gap-2 flex-col'>
       {category.tasks?.map((task: Task) => (
-        <TaskItem key={task.id} task={task} handleDelete={() => console.log('Handle delete')} />
+        <TaskItem key={task.id} task={task} categoryName={category.categoryname} handleDelete={() => console.log('Handle delete')} />
       ))}
       </div>
     </div>

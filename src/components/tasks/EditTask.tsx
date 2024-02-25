@@ -28,7 +28,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { EditTaskForm } from "./EditTaskForm"
 import { Task } from "@/types/types"
 
-export function EditTask({data}: {data: Task}) {
+export function EditTask({data, categoryName}: {data: Task, categoryName: string}) {
   const [open, setOpen] = React.useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
   
@@ -36,16 +36,16 @@ export function EditTask({data}: {data: Task}) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline">Add New</Button>
+          <Button variant="outline">Edit Task</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px] h-2/3 overflow-y-scroll">
           <DialogHeader>
-            <DialogTitle>Add New</DialogTitle>
+            <DialogTitle>Edit Task</DialogTitle>
             <DialogDescription>
               Make changes to your task details here. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <EditTaskForm closeFun={() => {setOpen(false)}} data={data}/>
+          <EditTaskForm closeFun={() => {setOpen(false)}} data={data} categoryName={categoryName}/>
         </DialogContent>
       </Dialog>
     )
@@ -64,7 +64,7 @@ export function EditTask({data}: {data: Task}) {
             Make changes to your tasks details here. Click save when you're done.
           </DrawerDescription>
         </DrawerHeader>
-        <AddNewForm closeFun={() => setOpen(false)} className="px-4" />
+        <EditTaskForm closeFun={() => {setOpen(false)}} data={data} categoryName={categoryName} className="px-4"/>
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

@@ -10,6 +10,7 @@ import { Category } from "@/types/types";
  const TaskMaster = async () => {
 
     const data =  await api.task.getCategorizedTasks.query()
+    // console.log('data is ', data[0]?.tasks)
 
   return (
     <div>

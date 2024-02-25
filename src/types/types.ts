@@ -1,3 +1,6 @@
+import { formdata } from "@/components/tasks/AddNewForm";
+import { formdata as formdataFromEdit } from "@/components/tasks/EditTaskForm";
+
 export type TaskStatus = "Not Started" | "In Progress" | "Finished" | "Paused" | "Scheduled";
 export type PriorityLabels = "High" | "Less" | "Moderate" | "Very High" | "Very Less";
 export type TrackerFrequency = "Daily" | "Weekly" | "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
@@ -13,40 +16,42 @@ export interface Tracker {
 }
 
 export interface Subtask {
-  id: number;
+  id: string;
+  taskId: string;
   title: string;
   description: string;
   status: string;
   priority: number;
   locked: boolean;
   flexible: boolean;
-  priorityLabel: string;
+  priorityLabel: PriorityLabels;
   createdOn: Date;
   expiresOn: Date;
   completedOn: Date;
-  viewAs: string;
+  viewAs: ViewAsType;
   specialLabels: string[];
   remark: string;
   tracker: Tracker[];
 }
 
 export interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
   status: string;
   priority: number;
   locked: boolean;
   flexible: boolean;
-  priorityLabel: string;
+  priorityLabel: PriorityLabels;
   createdOn: Date;
   expiresOn: Date;
   completedOn: Date;
-  viewAs: string;
+  viewAs: ViewAsType;
   specialLabels: string[];
   remark: string;
   subtasks: Subtask[];
   tracker: Tracker[];
+  categoryId: string;
 }
 
 export interface Category {
@@ -58,4 +63,9 @@ export interface Category {
   categoryremark: string;
   categorycreatedOn: Date;
   tasks: Task[];
+}
+
+
+export interface ExtendedFormValues extends formdataFromEdit {
+  taskId: string;
 }

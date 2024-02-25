@@ -6,8 +6,9 @@ import { authOptions } from "@/server/auth";
 import db from "@/server/db";
 import { db as dbForTransaction } from "@/server/db/pool";
 import { categories, tasks } from "@/server/db/schema";
+import { ExtendedFormValues } from "@/types/types";
 import postgres from "@vercel/postgres";
-import { InferInsertModel, InferSelectModel, and, eq, sql } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel, and, eq, ilike, sql } from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 
@@ -191,7 +192,7 @@ export async function createNewTask(values: formdata) {
           insertedTask: data.insertedTask,
         },
       };
-      console.log("response is: ", actionResponse);
+      // console.log("response is: ", actionResponse);
       return actionResponse;
     });
     return dbResponse;
@@ -206,3 +207,58 @@ export async function createNewTask(values: formdata) {
     return actionResponse;
   }
 }
+
+
+export interface EditTaskResponse {
+  data?: InferSelectModel<typeof tasks>;
+  error?: any;
+}
+
+
+export async function EditTaskAction(values: ExtendedFormValues) {
+  console.log("createNewTask Server component processing");
+  console.log(values);
+  const {title, priority, status, remark, viewAs, category, description, taskId} = values;
+  const session = await getServerSession(authOptions);
+  const abc = await db.query.categories;
+  if (!session) {
+    const response: response = {
+      error: { authorizationError: true },
+    };
+    return response;
+  }
+  console.log("We are here");
+  const responseInitializer:EditTaskResponse = {}
+  try {
+    // type TaskSelectResult = [InferSelectModel<typeof tasks>];
+    const [transactionResult] = await dbForTransaction.transaction(async (tx) => {
+      const [categoryResult] = await db.select({
+        categoryId: categories.id
+      }).from(categories).where(ilike(categories.title, category))
+      console.log('cateegory result is ', categoryResult)
+      await tx.update(tasks).set({
+        categoryId: categoryResult?.categoryId,
+        title: title,
+        status: status,
+        description: description,
+        priorityLabel: priority,
+        viewAs: viewAs,
+        remark: remark,
+      }).where(
+        eq(tasks.id, taskId)
+      )
+      console.log('task id is ', taskId);
+      
+      const updatedTask = await tx.select().from(tasks).where(eq(tasks.id, taskId))
+      console.log('updatedTask task result is ', updatedTask)
+      return updatedTask
+    })
+    revalidatePath("./tasks");
+    responseInitializer.data = transactionResult
+    return responseInitializer
+  } catch (error) {
+    console.log('EDIT_TASK', error)
+    responseInitializer.error = JSON.stringify(error)
+    return responseInitializer
+  }
+} 

@@ -47,7 +47,7 @@ export const tasks = pgTable("tasks", {
 	description: text("description"),
 	priority: numeric("priority").notNull(),
 	priorityLabel: priorityLabels("priority_label"),
-	status: status("status").notNull(),
+	status: status("status").notNull(),//
 	viewAs: viewAs("view_as").notNull(),
 	specialLabels: text("special_labels").array(),
 	remark: text("remark"),

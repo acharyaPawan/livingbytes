@@ -39,6 +39,7 @@ export const taskRouter = createTRPCRouter({
       jsonb_agg(
         jsonb_build_object(
           'id', t.id,
+          'categoryId', t.category_id,
           'title', t.title,
           'description', t.description,
           'status', t.status,
@@ -57,6 +58,7 @@ export const taskRouter = createTRPCRouter({
               jsonb_agg(
                 jsonb_build_object(
             'id', st.id,
+            'taskId', st.task_id,
             'title', st.title,
             'description', st.description,
             'status', st.status,
@@ -120,7 +122,7 @@ export const taskRouter = createTRPCRouter({
     `
     const res = await db.execute(sqlCommand)
     const resr: Category[] = res.rows as unknown as Category[]
-    console.log(resr)
+    // console.log('resr is ', resr)
     return resr as Category[]        
 })
 })

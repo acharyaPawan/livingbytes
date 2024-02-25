@@ -31,10 +31,12 @@ import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { z } from "zod";
-import { createNewTask } from "@/app/actions";
+import { EditTaskAction, EditTaskResponse, createNewTask } from "@/app/actions";
 import { revalidatePath } from "next/cache";
 import { useRouter } from "next/navigation";
-import { Task } from "@/types/types";
+import { ExtendedFormValues, Task } from "@/types/types";
+import { EditTask } from "./EditTask";
+import { type } from "os";
 
 const PRIORITYENUM = [
   "High",
@@ -49,6 +51,13 @@ const CATEGORYLIST = [
   "Work Tasks",
   "Household Chores",
 ] as const;
+const TASKSTATUSENUM = ["Not Started", "In Progress", "Finished", "Paused", "Scheduled"] as const
+const categoryListArray = [
+  "Morning Routine",
+  "Work Tasks",
+  "Household Chores",
+  "Customize"
+]
 
  const formSchema = z.object({
   title: z.string().min(3, {
@@ -71,12 +80,14 @@ const CATEGORYLIST = [
     .or(z.string().min(3, {
       message: "Category name must be 3 character long."
     })),
-  customCategory: z.string().optional(),
+  status: z.enum(TASKSTATUSENUM, {
+    required_error: "Select one from dropdown.",
+  })
 });
 
 export type formdata =  z.infer<typeof formSchema>
 
-export function EditTaskForm({className, closeFun, data}: {className?: string, closeFun: () => void, data: Task}) {
+export function EditTaskForm({className, closeFun, data, categoryName}: {className?: string, closeFun: () => void, data: Task, categoryName: string}) {
   const router = useRouter()
 
   const [isPending, startTransition] = useTransition();
@@ -84,27 +95,46 @@ export function EditTaskForm({className, closeFun, data}: {className?: string, c
   const [isCustomCategory, setCustomCategory] = useState(false);
 
   const handleCategoryChange = (selectedCategory: string) => {
-    setCustomCategory(selectedCategory === "Custom");
+    setCustomCategory(selectedCategory === "Customize");
+    // if (categoryName) {
+    //   setCustomCategory(true)
+    // }
   };
+
 
  
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: data.title,
-      description: data.description,
-      remark: data.remark,
+      title: data?.title || '',
+      description: data?.description || '',
+      category: categoryName || '',
+      remark: data?.remark || '',
+      priority: data?.priorityLabel || 'Moderate',
+      viewAs: data?.viewAs || 'Status',
     },
   });
+
+
 
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
+
+    console.log('I am here')
     startTransition(async () => {
-      const response = await createNewTask(values);
+      try {
+      const response: EditTaskResponse = await EditTaskAction({...values, taskId:data.id} as ExtendedFormValues);
+      if (response.error) {
+        console.log('error received in clientt', response.error)
+      }
+      console.log('data received in client ', response.data)
+      } catch (error) {
+        console.log('error received in clientt', error)
+      }
       closeFun()
       router.refresh();
     });
@@ -165,7 +195,7 @@ export function EditTaskForm({className, closeFun, data}: {className?: string, c
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prority</FormLabel>
+              <FormLabel>Category</FormLabel>
 
               <Select
                 onValueChange={(value) => {
@@ -187,8 +217,9 @@ export function EditTaskForm({className, closeFun, data}: {className?: string, c
                   <SelectItem value="Household Chores">
                     Household Chores
                   </SelectItem>
-                  <SelectItem value="Custom">Custom</SelectItem>
-
+                  <SelectItem value="Customize">Customize</SelectItem>
+                  {!categoryListArray.includes(categoryName) && <SelectItem value={categoryName}>{categoryName}</SelectItem>}
+                  {/* {categoryName && } */}
                   {/* Location where i want selectitem but that item should be input field and it sends vlaue that we input.For your instance this is for custom category. */}
                 </SelectContent>
               </Select>
@@ -245,6 +276,31 @@ export function EditTaskForm({className, closeFun, data}: {className?: string, c
         />
         <FormField
           control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Set Task Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a valid state for this task." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {TASKSTATUSENUM.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {/* <SelectItem value="Very High">Very High</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Moderate">Moderate</SelectItem>
+                  <SelectItem value="Less">Less</SelectItem>
+                  <SelectItem value="Very Less">Very Less</SelectItem> */}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="remark"
           render={({ field }) => (
             <FormItem>
@@ -292,7 +348,7 @@ export function EditTaskForm({className, closeFun, data}: {className?: string, c
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending}>Submit</Button>
+        <Button type="submit">Submit</Button>
       </form>
     </Form>
   );
