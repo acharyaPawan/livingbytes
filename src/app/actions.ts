@@ -203,7 +203,7 @@ export async function createNewTask(values: formdata) {
         errorMessage: err,
       },
     };
-    revalidatePath("./tasks");
+    // revalidatePath("./tasks");
     return actionResponse;
   }
 }
@@ -253,7 +253,6 @@ export async function EditTaskAction(values: ExtendedFormValues) {
       console.log('updatedTask task result is ', updatedTask)
       return updatedTask
     })
-    revalidatePath("./tasks");
     responseInitializer.data = transactionResult
     return responseInitializer
   } catch (error) {

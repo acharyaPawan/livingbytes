@@ -8,6 +8,7 @@ import { formatTimeDifference } from '@/lib/utils';
 import { AddNew } from './AddNew';
 import { useDataStore } from '@/hooks/use-modal-store';
 import { EditTask } from './EditTask';
+import { DeleteTaskAlertDialog } from './DeleteAlertDialog';
 
 type TaskItemProps = {
     task: Task;
@@ -25,7 +26,7 @@ type TaskItemProps = {
           <div className='flex items-center gap-2'>
             <Checkbox />
             <span>{task.title}</span>
-            <span onClick={() => handleDelete(task.id)}>❌</span>
+            <DeleteTaskAlertDialog taskId={task.id}/>
             <span>...</span>
           </div>
         );
@@ -45,6 +46,7 @@ type TaskItemProps = {
               {task.specialLabels && <span className='bold'>{task.specialLabels[0]}</span>}
               {task.remark && <span className='dark:text-green-200 text-green-950'>{task.remark}</span>}
               <span><EditTask data={task} categoryName={categoryName}/></span>
+              <DeleteTaskAlertDialog taskId={task.id}/>
               <span>. . .</span>
             </div>
             {/* Check if there are subtasks and render accordingly */}

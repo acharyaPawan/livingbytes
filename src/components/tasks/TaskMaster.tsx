@@ -5,7 +5,7 @@ import { api } from "@/trpc/server";
 import { Category } from "@/types/types";
   
   
-  
+const queryKey = 'getTasks'
 
  const TaskMaster = async () => {
 

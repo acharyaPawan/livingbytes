@@ -37,6 +37,9 @@ import { useRouter } from "next/navigation";
 import { ExtendedFormValues, Task } from "@/types/types";
 import { EditTask } from "./EditTask";
 import { type } from "os";
+import { getQueryKey } from "@trpc/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/trpc/react";
 
 const PRIORITYENUM = [
   "High",
@@ -87,10 +90,14 @@ const categoryListArray = [
 
 export type formdata =  z.infer<typeof formSchema>
 
+
 export function EditTaskForm({className, closeFun, data, categoryName}: {className?: string, closeFun: () => void, data: Task, categoryName: string}) {
   const router = useRouter()
 
   const [isPending, startTransition] = useTransition();
+
+  // const queryClient = useQueryClient()
+
 
   const [isCustomCategory, setCustomCategory] = useState(false);
 
@@ -135,8 +142,10 @@ export function EditTaskForm({className, closeFun, data, categoryName}: {classNa
       } catch (error) {
         console.log('error received in clientt', error)
       }
+      // queryClient.invalidateQueries({queryKey: getQueryKey(api.task.getCategorizedTasks.query ,undefined, 'query' )})
       closeFun()
-      router.refresh();
+      // queryClient.invalidateQueries({queryKey: getQueryKey(api.task.getCategorizedTasks ,undefined, 'query' )})
+      router.refresh()
     });
 
     toast({
