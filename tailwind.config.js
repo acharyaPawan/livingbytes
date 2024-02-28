@@ -25,6 +25,9 @@ module.exports = {
       },
     },
     extend: {
+      backgroundColor: {
+        'detail-medium-contrast': 'var(--detail-medium-contrast, rgb(234, 234, 234))',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
