@@ -4,7 +4,7 @@ const EventPage = () => {
   return (
     <>
       <div className="grid place-items-center">
-    <EventVisualizer />
+      <EventVisualizer />
       </div>
 
     </>
