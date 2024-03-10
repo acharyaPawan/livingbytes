@@ -88,21 +88,6 @@ export const subtasks = pgTable("subtasks", {
 	flexible: boolean("flexible").default(false),
 });
 
-export const events = pgTable("events", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" } ),
-	eventNature: eventType("eventNature").notNull(),
-	tags: text("tags").array().notNull(),
-	description: text("description"),
-	pinned: boolean("pinned").default(false),
-	createdOn: timestamp("created_on", { withTimezone: true, mode: 'string' }).defaultNow(),
-},
-(table) => {
-	return {
-		tagsIdx: index("tags_idx").on(table.tags),
-	}
-});
-
 export const schedules = pgTable("schedules", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" } ),
@@ -133,9 +118,25 @@ export const singleDayEvents = pgTable("single_day_events", {
 export const rangeEvents = pgTable("range_events", {
 	rangeId: uuid("range_id").default(sql`uuid_generate_v4()`).primaryKey().notNull(),
 	// TODO: failed to parse database type 'daterange'
-	// @ts-ignore
+	//@ts-ignore
 	dateRange: unknown("date_range").notNull(),
 	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
+});
+
+export const events = pgTable("events", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" } ),
+	eventNature: eventType("eventNature").notNull(),
+	tags: text("tags").array().notNull(),
+	description: text("description"),
+	pinned: boolean("pinned").default(false),
+	createdOn: timestamp("created_on", { withTimezone: true, mode: 'string' }).defaultNow(),
+	title: text("title").notNull(),
+},
+(table) => {
+	return {
+		tagsIdx: index("tags_idx").on(table.tags),
+	}
 });
 
 export const verificationToken = pgTable("verificationToken", {

@@ -13,9 +13,9 @@ const TaskPage = () => {
         <Suspense fallback={<div>...Loading</div>}>
         <TaskMaster />
         </Suspense>
-        <div className="flex">
+        {/* <div className="flex">
         <EventVisualizer />
-        </div>
+        </div> */}
       </main>
     </div>
   );
