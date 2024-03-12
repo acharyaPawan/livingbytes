@@ -2,13 +2,27 @@
 
 import { formdata } from "@/components/tasks/AddNewForm";
 import { getEndOfDayISOString } from "@/lib/utils";
-import { authOptions } from "@/server/auth";
+import { authOptions, getServerAuthSession } from "@/server/auth";
 import db from "@/server/db";
 import { db as dbForTransaction } from "@/server/db/pool";
-import { categories, tasks } from "@/server/db/schema";
+import {
+  categories,
+  eventType,
+  events,
+  rangeEvents,
+  singleDayEvents,
+  tasks,
+} from "@/server/db/schema";
 import { ExtendedFormValues } from "@/types/types";
 import postgres from "@vercel/postgres";
-import { InferInsertModel, InferSelectModel, and, eq, ilike, sql } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  and,
+  eq,
+  ilike,
+  sql,
+} from "drizzle-orm";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 
@@ -46,35 +60,6 @@ type response =
         insertedTask?: InferInsertModel<typeof tasks>;
       };
     };
-
-// const [categoriesWithTasksAndSubtasks2] = await db.select({
-//   categoryId: categories.id,
-//   categoryName: categories.title,
-//   tasks: db.select().from(tasks).where(
-//     eq(tasks.categoryId, categories.id)
-//   )
-// }).from(categories)
-// .innerJoin(tasks, eq(categories.id, tasks.categoryId))
-// .groupBy(categories.id, categories.title)
-// .orderBy(categories.title).execute();
-
-// const categoriesWithTasksAndSubtasks = await db.query.categories.findMany({
-//   with: {
-//     tasks: true
-//   }
-// })
-// if (categoriesWithTasksAndSubtasks === undefined) {
-//   console.log('Undefined')
-//   return {Hey: 'okdone'}
-// }
-//     console.log("Awaited data is ", categoriesWithTasksAndSubtasks.rows);
-
-//     return categoriesWithTasksAndSubtasks.rows;
-//   } catch (e) {
-//     console.log("Error is ", e);
-//     return { Hey: "Error" };
-//   }
-// }
 
 export async function createNewTask(values: formdata) {
   console.log("createNewTask Server component processing");
@@ -208,17 +193,24 @@ export async function createNewTask(values: formdata) {
   }
 }
 
-
 export interface EditTaskResponse {
   data?: InferSelectModel<typeof tasks>;
   error?: any;
 }
 
-
 export async function EditTaskAction(values: ExtendedFormValues) {
   console.log("createNewTask Server component processing");
   console.log(values);
-  const {title, priority, status, remark, viewAs, category, description, taskId} = values;
+  const {
+    title,
+    priority,
+    status,
+    remark,
+    viewAs,
+    category,
+    description,
+    taskId,
+  } = values;
   const session = await getServerSession(authOptions);
   const abc = await db.query.categories;
   if (!session) {
@@ -228,36 +220,179 @@ export async function EditTaskAction(values: ExtendedFormValues) {
     return response;
   }
   console.log("We are here");
-  const responseInitializer:EditTaskResponse = {}
+  const responseInitializer: EditTaskResponse = {};
   try {
     // type TaskSelectResult = [InferSelectModel<typeof tasks>];
-    const [transactionResult] = await dbForTransaction.transaction(async (tx) => {
-      const [categoryResult] = await db.select({
-        categoryId: categories.id
-      }).from(categories).where(ilike(categories.title, category))
-      console.log('cateegory result is ', categoryResult)
-      await tx.update(tasks).set({
-        categoryId: categoryResult?.categoryId,
-        title: title,
-        status: status,
-        description: description,
-        priorityLabel: priority,
-        viewAs: viewAs,
-        remark: remark,
-      }).where(
-        eq(tasks.id, taskId)
-      )
-      console.log('task id is ', taskId);
-      
-      const updatedTask = await tx.select().from(tasks).where(eq(tasks.id, taskId))
-      console.log('updatedTask task result is ', updatedTask)
-      return updatedTask
-    })
-    responseInitializer.data = transactionResult
-    return responseInitializer
+    const [transactionResult] = await dbForTransaction.transaction(
+      async (tx) => {
+        const [categoryResult] = await db
+          .select({
+            categoryId: categories.id,
+          })
+          .from(categories)
+          .where(ilike(categories.title, category));
+        console.log("cateegory result is ", categoryResult);
+        await tx
+          .update(tasks)
+          .set({
+            categoryId: categoryResult?.categoryId,
+            title: title,
+            status: status,
+            description: description,
+            priorityLabel: priority,
+            viewAs: viewAs,
+            remark: remark,
+          })
+          .where(eq(tasks.id, taskId));
+        console.log("task id is ", taskId);
+
+        const updatedTask = await tx
+          .select()
+          .from(tasks)
+          .where(eq(tasks.id, taskId));
+        console.log("updatedTask task result is ", updatedTask);
+        return updatedTask;
+      },
+    );
+    responseInitializer.data = transactionResult;
+    return responseInitializer;
   } catch (error) {
-    console.log('EDIT_TASK', error)
-    responseInitializer.error = JSON.stringify(error)
-    return responseInitializer
+    console.log("EDIT_TASK", error);
+    responseInitializer.error = JSON.stringify(error);
+    return responseInitializer;
   }
-} 
+}
+
+import type { formdataEvent } from "@/components/events/AddNewEvent";
+import { formSchema } from "@/components/events/AddNewEvent";
+import { ZodError } from "zod";
+
+export async function createEventAction(values: formdataEvent) {
+  //Authenticate user
+  const session = await getServerAuthSession();
+  if (!session) {
+    // User not authenticated
+    return {
+      error: "USER_NOT_AUTHENTICATED_CREATEEVENT",
+    };
+  }
+
+  // User authentication completed
+
+  // Request data validation
+  try {
+    const formdata = formSchema.parse(values);
+    // If validation succeeds, continue processing with validatedData
+  } catch (error) {
+    if (error instanceof ZodError) {
+      // Handle validation error, e.g., send an error response
+      return {
+        error: "Validation failed",
+        details: error.errors.toString(),
+        status: 400,
+      };}
+    // } else {
+    //   // Handle other errors
+    //   return { error: "Internal server error", status: 500, errorDetails: error };
+    // }
+  }
+  //Data validation completed
+
+  const tags = values.tags.split(",");
+
+  // database works
+  try {
+    const res = await db.query.events.findFirst({
+      where: and(
+        eq(events.userId, session.user.id),
+        eq(events.title, values.title),
+      ),
+    });
+  } catch (error) {
+    return {
+      error: "DB_QUERY_ERROR_FINDFIRST",
+      errorDetails: error,
+    };
+  }
+
+  if (values.type === "single") {
+    if (!values.EventTimeStamp) {
+      return {
+        error: "NO_EVENT_TIMESTAMP",
+      };
+    }
+    const EventTimeStamp = values.EventTimeStamp;
+    const result = await dbForTransaction.transaction(async (tx) => {
+      const [createdEvent] = await tx
+        .insert(events)
+        .values({
+          userId: session.user.id,
+          eventNature: "Single",
+          tags: tags,
+          title: values.title,
+          description: values.description,
+        })
+        .returning();
+
+      if (!createdEvent?.id) {
+        await tx.rollback();
+        return;
+      }
+
+      const [createdSingleEvent] = await tx
+        .insert(singleDayEvents)
+        .values({
+          eventId: createdEvent.id,
+          eventDate: EventTimeStamp,
+        })
+        .returning();
+
+      return {
+        data: { ...createdEvent, ...createdSingleEvent },
+      };
+    });
+    return result
+  }
+
+  if (values.type === "range") {
+    if (!values.range?.from && !values.range?.to) {
+      return {
+        error: "NO_EVENT_RANGE_TIMESTAMP",
+      };
+    }
+    // const range = `[${values.range.from.toISOString()}, ${values.range.to.toISOString()}]`
+    const startDate = values.range.from
+    const endDate = values.range.to
+    const result = await dbForTransaction.transaction(async (tx) => {
+      const [createdEvent] = await tx
+        .insert(events)
+        .values({
+          userId: session.user.id,
+          eventNature: "Range",
+          tags: tags,
+          title: values.title,
+          description: values.description,
+        })
+        .returning();
+
+      if (!createdEvent?.id) {
+        await tx.rollback();
+        return;
+      }
+
+      const [createdRangeEvent] = await tx
+        .insert(rangeEvents)
+        .values({
+          startDate: startDate,
+          endDate: endDate,
+          eventId: createdEvent.id,
+        })
+        .returning();
+
+      return {
+        data: { ...createdEvent, ...createdRangeEvent },
+      };
+    });
+    return result
+  }
+}

@@ -1,6 +1,6 @@
-import { pgTable, unique, pgEnum, text, timestamp, foreignKey, uuid, numeric, boolean, index, primaryKey, integer } from "drizzle-orm/pg-core"
+import { pgTable, unique, pgEnum, text, timestamp, foreignKey, uuid, numeric, boolean, index, date, primaryKey, integer } from "drizzle-orm/pg-core"
 
-import { sql } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 export const role = pgEnum("role", ['OWNER', 'USER'])
 export const priorityLabels = pgEnum("PriorityLabels", ['Very Less', 'Very High', 'Moderate', 'Less', 'High'])
 export const status = pgEnum("Status", ['Scheduled', 'Paused', 'Finished', 'In Progress', 'Not Started'])
@@ -107,7 +107,7 @@ export const schedules = pgTable("schedules", {
 export const singleDayEvents = pgTable("single_day_events", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
-	eventDate: timestamp("event_date", { withTimezone: true, mode: 'string' }).notNull(),
+	eventDate: timestamp("event_date", { withTimezone: true, mode: 'date' }).notNull(),
 },
 (table) => {
 	return {
@@ -115,19 +115,17 @@ export const singleDayEvents = pgTable("single_day_events", {
 	}
 });
 
-export const rangeEvents = pgTable("range_events", {
-	rangeId: uuid("range_id").default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	// TODO: failed to parse database type 'daterange'
-	//@ts-ignore
-	dateRange: text("date_range").notNull(),
-	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
-});
+export const singleDayEventsRelations = relations(singleDayEvents, ({one}) => ({
+	event: one(events, {
+		fields: [singleDayEvents.eventId],
+		references: [events.id]
+	})
+}))
 
 export const events = pgTable("events", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" } ),
 	eventNature: eventType("eventNature").notNull(),
-	//remove not null
 	tags: text("tags").array().notNull(),
 	description: text("description"),
 	pinned: boolean("pinned").default(false),
@@ -139,6 +137,25 @@ export const events = pgTable("events", {
 		tagsIdx: index("tags_idx").on(table.tags),
 	}
 });
+
+export const eventsRelations = relations(events, ({one}) => ({
+	singleDayEvent: one(singleDayEvents),
+	rangeEvent: one(rangeEvents)
+}))
+
+export const rangeEvents = pgTable("range_events", {
+	rangeId: uuid("range_id").default(sql`uuid_generate_v4()`).primaryKey().notNull(),
+	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
+	startDate: date("start_date", {mode: "date"}).notNull(),
+	endDate: date("end_date", {mode: "date"}).notNull(),
+});
+
+export const rangeEventsRelations = relations(rangeEvents, ({one}) => ({
+	event: one(events, {
+		fields: [rangeEvents.eventId],
+		references: [events.id]
+	})
+}))
 
 export const verificationToken = pgTable("verificationToken", {
 	identifier: text("identifier").notNull(),

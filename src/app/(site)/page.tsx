@@ -44,6 +44,9 @@ export default async function Home() {
                 .
               </p>
             )}
+            <div>Quick Links</div>
+            <Link href={"/tasks"}>TaskMaster</Link>
+            <Link href={"/events"}>Events</Link>
           </div>
         </div>
       </div>

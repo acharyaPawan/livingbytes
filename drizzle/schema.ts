@@ -1,4 +1,4 @@
-import { pgTable, unique, pgEnum, text, timestamp, foreignKey, uuid, numeric, boolean, index, primaryKey, integer } from "drizzle-orm/pg-core"
+import { pgTable, unique, pgEnum, text, timestamp, foreignKey, uuid, numeric, boolean, index, date, primaryKey, integer } from "drizzle-orm/pg-core"
 
 import { sql } from "drizzle-orm"
 export const role = pgEnum("role", ['OWNER', 'USER'])
@@ -115,14 +115,6 @@ export const singleDayEvents = pgTable("single_day_events", {
 	}
 });
 
-export const rangeEvents = pgTable("range_events", {
-	rangeId: uuid("range_id").default(sql`uuid_generate_v4()`).primaryKey().notNull(),
-	// TODO: failed to parse database type 'daterange'
-	//@ts-ignore
-	dateRange: unknown("date_range").notNull(),
-	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
-});
-
 export const events = pgTable("events", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" } ),
@@ -137,6 +129,13 @@ export const events = pgTable("events", {
 	return {
 		tagsIdx: index("tags_idx").on(table.tags),
 	}
+});
+
+export const rangeEvents = pgTable("range_events", {
+	rangeId: uuid("range_id").default(sql`uuid_generate_v4()`).primaryKey().notNull(),
+	eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" } ),
+	startDate: date("start_date").notNull(),
+	endDate: date("end_date").notNull(),
 });
 
 export const verificationToken = pgTable("verificationToken", {

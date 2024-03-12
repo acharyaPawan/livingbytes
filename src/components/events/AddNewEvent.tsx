@@ -29,17 +29,13 @@ import {
 
 import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { z } from "zod";
-import { createNewTask } from "@/app/actions";
-import { revalidatePath } from "next/cache";
 import { useRouter } from "next/navigation";
-import { DatePickerForm } from "./DatePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
-// import { TimePickerDemo } from "../time-picker-demo";
-import { DateRange } from "react-day-picker";
-import { FormValidationContext } from "react-stately";
+import { createEventAction } from "@/app/actions";
+
 
 const PRIORITYENUM = [
   "High",
@@ -48,16 +44,10 @@ const PRIORITYENUM = [
   "Very High",
   "Very Less",
 ] as const;
-const VIEWASENUM = ["Checkbox", "Status"] as const;
-const CATEGORYLIST = [
-  "Morning Routine",
-  "Work Tasks",
-  "Household Chores",
-] as const;
 
 const TYPE = ["single", "schedule", "range"] as const;
 
-const formSchema = z.object({
+export const formSchema = z.object({
   title: z.string().min(3, {
     message: "Title must be at least 3 characters.",
   }),
@@ -78,13 +68,13 @@ const formSchema = z.object({
   }).refine(
     (data) => data.from > addDays(new Date(), -1),
     "Start date must be in the future"
-  ),
+  ).optional(),
   EventTimeStamp: z.date({
     required_error: "A date of birth is required.",
-  }),
+  }).optional(),
 });
 
-export type formdata = z.infer<typeof formSchema>;
+export type formdataEvent = z.infer<typeof formSchema>;
 
 export function AddNewEvent({
   className,
@@ -115,15 +105,21 @@ export function AddNewEvent({
     },
   });
 
+
+  
+
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    // startTransition(async () => {
-    //   const response = await createNewTask(values);
-    //   closeFun();
-    //   router.refresh();
-    // });
+    console.log('I am here')
+    startTransition(async () => {
+      console.log("request sent")
+      const response = await createEventAction(values);
+      console.log('response received')
+      closeFun();
+      router.refresh();
+    });
 
     console.log(values);
 
@@ -149,19 +145,6 @@ export function AddNewEvent({
       ),
     );
   };
-
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(2022, 0, 20),
-    to: addDays(new Date(2022, 0, 20), 20),
-  });
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2022, 0, 20),
-    to: addDays(new Date(2022, 0, 20), 1),
-  });
-
-  const [startTime, setStartTime] = useState("00:00");
-  const [endTime, setEndTime] = useState("23:59");
 
   return (
     <Form {...form}>
