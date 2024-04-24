@@ -2,7 +2,7 @@ import Link from "next/link";
 import Navbar from "@/components/navigation/navigation-bar";
 import { Separator } from "@/components/ui/separator";
 import { getServerAuthSession } from "@/server/auth";
-import { api } from "@/trpc/server";
+// import { api } from "@/trpc/server";
 
 export default async function Home() {
   const session = await getServerAuthSession();

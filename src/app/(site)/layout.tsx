@@ -5,10 +5,11 @@ import { cookies } from "next/headers";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
-import { ThemeProvider } from "@/components/theme-provider"
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ThemeProvider } from "@/components/theme-provider";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
+import { EdgeStoreProvider } from "@/lib/edgestore";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,15 +29,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={`font-sans bg-zinc-100 dark:bg-zinc-900 text-neutral-950 dark:text-neutral-100 ${inter.variable}`} style={{lineHeight: "1.5",}}>
+      <body
+        className={`h-screen bg-zinc-100 font-sans text-neutral-950 dark:bg-zinc-900 dark:text-neutral-100 ${inter.variable}`}
+        style={{ lineHeight: "1.5" }}
+        suppressHydrationWarning={true as const}
+      >
         <TRPCReactProvider cookies={cookies().toString()}>
-        <ThemeProvider
+          <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <EdgeStoreProvider>{children}</EdgeStoreProvider>
             <Toaster />
             {/* <ReactQueryDevtools initialIsOpen={false} /> */}
           </ThemeProvider>

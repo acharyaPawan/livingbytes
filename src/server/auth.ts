@@ -12,7 +12,7 @@ import GithubProvider from "next-auth/providers/github";
 import { env } from "@/env.mjs";
 import db from "./db";
 import { user } from "@/server/db/schema";
-import { Adapter } from "next-auth/adapters";
+import { type Adapter } from "next-auth/adapters";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -91,7 +91,7 @@ export const authOptions: NextAuthOptions = {
         sub: token.sub,
       } as JWT;
     },
-    async signIn({ user, account, profile }) {
+    signIn({ user, account, profile }) {
       
       console.log(user)
       console.log(account)

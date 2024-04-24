@@ -14,6 +14,10 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^0.7.0",
+    "@blocknote/core": "^0.12.4",
+    "@blocknote/react": "^0.12.4",
+    "@edgestore/react": "^0.1.6",
+    "@edgestore/server": "^0.1.6",
     "@hookform/resolvers": "^3.3.4",
     "@neondatabase/serverless": "^0.8.1",
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -33,6 +37,7 @@
     "@t3-oss/env-nextjs": "^0.7.3",
     "@tanstack/react-query": "^4.36.1",
     "@tanstack/react-query-devtools": "^4.36.1",
+    "@tanstack/react-table": "^8.15.3",
     "@trpc/client": "^10.43.6",
     "@trpc/next": "^10.43.6",
     "@trpc/react-query": "^10.43.6",

@@ -1,30 +1,18 @@
 "use server";
 
-import { formdata } from "@/components/tasks/AddNewForm";
 import { getEndOfDayISOString } from "@/lib/utils";
 import { authOptions, getServerAuthSession } from "@/server/auth";
 import db from "@/server/db";
 import { db as dbForTransaction } from "@/server/db/pool";
 import {
   categories,
-  eventType,
   events,
   rangeEvents,
   singleDayEvents,
   tasks,
 } from "@/server/db/schema";
-import { ExtendedFormValues } from "@/types/types";
-import postgres from "@vercel/postgres";
-import {
-  InferInsertModel,
-  InferSelectModel,
-  and,
-  eq,
-  ilike,
-  sql,
-} from "drizzle-orm";
+
 import { getServerSession } from "next-auth";
-import { revalidatePath } from "next/cache";
 
 const priorityNumberMap = {
   "Very High": 50,
@@ -50,6 +38,7 @@ type response =
         categoryDbError?: boolean;
         taskDbError?: boolean;
         unExpectedErro?: boolean;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         errorMessage?: any;
         authorizationError?: boolean;
       };
@@ -66,7 +55,7 @@ export async function createNewTask(values: formdata) {
   console.log(values);
   const session = await getServerSession(authOptions);
 
-  const abc = await db.query.categories;
+
   if (!session) {
     const response: response = {
       error: { authorizationError: true },
@@ -76,7 +65,7 @@ export async function createNewTask(values: formdata) {
   console.log("We are here");
 
   let actionResponse: response;
-  let data: {
+  const data: {
     insertedCategory?: InferInsertModel<typeof categories>;
     insertedTask?: InferInsertModel<typeof tasks>;
   } = {};
@@ -106,7 +95,7 @@ export async function createNewTask(values: formdata) {
           .values({
             userId: session.user.id,
             title: values.category,
-            priority: priorityNumberMap["Moderate"].toString(),
+            priority: priorityNumberMap.Moderate.toString(),
           })
           .returning();
 
@@ -195,6 +184,7 @@ export async function createNewTask(values: formdata) {
 
 export interface EditTaskResponse {
   data?: InferSelectModel<typeof tasks>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error?: any;
 }
 
@@ -212,7 +202,6 @@ export async function EditTaskAction(values: ExtendedFormValues) {
     taskId,
   } = values;
   const session = await getServerSession(authOptions);
-  const abc = await db.query.categories;
   if (!session) {
     const response: response = {
       error: { authorizationError: true },
@@ -266,6 +255,9 @@ export async function EditTaskAction(values: ExtendedFormValues) {
 import type { formdataEvent } from "@/components/events/AddNewEvent";
 import { formSchema } from "@/components/events/AddNewEvent";
 import { ZodError } from "zod";
+import {type InferInsertModel,type InferSelectModel, and, eq, ilike } from "drizzle-orm";
+import type{ formdata } from "@/components/tasks/AddNewForm";
+import type { ExtendedFormValues } from "@/types/types";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user
@@ -281,7 +273,7 @@ export async function createEventAction(values: formdataEvent) {
 
   // Request data validation
   try {
-    const formdata = formSchema.parse(values);
+    formSchema.parse(values);
     // If validation succeeds, continue processing with validatedData
   } catch (error) {
     if (error instanceof ZodError) {
@@ -302,7 +294,7 @@ export async function createEventAction(values: formdataEvent) {
 
   // database works
   try {
-    const res = await db.query.events.findFirst({
+    await db.query.events.findFirst({
       where: and(
         eq(events.userId, session.user.id),
         eq(events.title, values.title),
@@ -335,7 +327,7 @@ export async function createEventAction(values: formdataEvent) {
         .returning();
 
       if (!createdEvent?.id) {
-        await tx.rollback();
+        tx.rollback();
         return;
       }
 
@@ -376,7 +368,7 @@ export async function createEventAction(values: formdataEvent) {
         .returning();
 
       if (!createdEvent?.id) {
-        await tx.rollback();
+        tx.rollback();
         return;
       }
 
