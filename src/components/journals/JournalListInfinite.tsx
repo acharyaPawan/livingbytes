@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import JournalCardView from "./JornalCardView";
 
 export default function PostListInfinite({
-  initialPosts,
+  initialJournals,
 }: {
-  initialPosts: JournalType[];
+  initialJournals: JournalType[];
 }) {
   const [cursor, setCursor] = useState<Date>(new Date());
-  const [journals, setJournals] = useState<JournalType[]>(initialPosts);
+  const [journals, setJournals] = useState<JournalType[]>(initialJournals);
   const [hasMoreJournals, setHasMoreJournals] = useState<boolean>(true);
 
   const scrollTrigger = useRef<HTMLDivElement | null>(null);
@@ -19,13 +19,13 @@ export default function PostListInfinite({
   useEffect(() => {
     // setting up initialCursor
     const initialCursorDate =
-      initialPosts?.length > 0 && initialPosts[initialPosts.length - 1]?.date
-        ? initialPosts[initialPosts.length - 1]?.date
+      initialJournals?.length > 0 && initialJournals[initialJournals.length - 1]?.date
+        ? initialJournals[initialJournals.length - 1]?.date
         : new Date();
     if (typeof initialCursorDate !== "undefined") {
       setCursor(initialCursorDate);
     }
-  }, [initialPosts]);
+  }, [initialJournals]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/require-await
@@ -86,7 +86,7 @@ export default function PostListInfinite({
 
   return (
     <div>
-      <div id="scrollArea">
+      <div id="scrollArea" className="flex flex-col gap-2 w-56">
         {journals.map((j) => {
           return <JournalCardView key={j.id} Journal={j} />;
         })}

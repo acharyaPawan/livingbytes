@@ -13,12 +13,12 @@ export const getInitialJournals = async () => {
       orderBy: (journals, { desc }) => desc(journals.date),
       limit: 3,
     });
-    console.log("journals are ", returnedJournals);
+    console.log("journals are ", returnedJournals[0]);
     return returnedJournals;
   } catch (e: unknown) {
     console.error(e);
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    throw new Error(`An error occurred: ${e}`);
+    throw null;
   }
 };
 

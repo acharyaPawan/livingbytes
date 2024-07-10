@@ -5,7 +5,8 @@ import {
   BlockNoteView,
   useCreateBlockNote,
 } from "@blocknote/react";
-import "@blocknote/core/style.css";
+import "@blocknote/core/fonts/inter.css";
+import "@blocknote/react/style.css";
 import { useTheme } from "next-themes";
 
 import { useEdgeStore } from "@/lib/edgestore";
@@ -41,15 +42,15 @@ function Editor({ onChange, initialContent, editable }: EditorProps) {
     initialContent: initialContent
       ? (JSON.parse(initialContent) as PartialBlock[])
       : undefined,
-    uploadFile: handleUpload
+    uploadFile: handleUpload,
   });
 
   return (
-    <div>
-      {/* <BlockNoteView
-        editor={editor}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
-      /> */}
+    // <div>
+    //   {/* <BlockNoteView
+    //     editor={editor}
+    //     theme={resolvedTheme === "dark" ? "dark" : "light"}
+    //   /> */}
       <BlockNoteView
         editor={editor2}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
@@ -57,8 +58,9 @@ function Editor({ onChange, initialContent, editable }: EditorProps) {
         onChange={() => {
           onChange(JSON.stringify(editor2.document, null, 2));
         }}
+        className="h-96 overflow-y-scroll"
       />
-    </div>
+    // </div>
   );
 }
 

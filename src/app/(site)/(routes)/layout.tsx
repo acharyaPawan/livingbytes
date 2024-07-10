@@ -8,7 +8,7 @@ export default function RoutePage({
 }) {
   return (
 
-<div className="px-4 h-full">
+<div className="flex flex-col overflow-hidden px-4 h-screen">
       <DashboardNav />
       <Separator orientation="horizontal"  className="w-full h-[1px] bg-primary"/>
           {children}

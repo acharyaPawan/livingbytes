@@ -76,7 +76,7 @@ export const session = pgTable("session", {
 
 export const categories = pgTable("categories", {
   id: uuid("id")
-    .default(sql`uuid_generate_v4()`)
+    .defaultRandom()
     .primaryKey()
     .notNull(),
   userId: text("user_id")
@@ -96,7 +96,7 @@ export const categories = pgTable("categories", {
 
 export const tasks = pgTable("tasks", {
   id: uuid("id")
-    .default(sql`uuid_generate_v4()`)
+    .defaultRandom()
     .primaryKey()
     .notNull(),
   categoryId: uuid("category_id")
@@ -131,7 +131,7 @@ export const tasks = pgTable("tasks", {
 
 export const trackers = pgTable("trackers", {
   id: uuid("id")
-    .default(sql`uuid_generate_v4()`)
+    .defaultRandom()
     .primaryKey()
     .notNull(),
   taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
@@ -151,7 +151,7 @@ export const trackers = pgTable("trackers", {
 
 export const subtasks = pgTable("subtasks", {
   id: uuid("id")
-    .default(sql`uuid_generate_v4()`)
+    .defaultRandom()
     .primaryKey()
     .notNull(),
   taskId: uuid("task_id")
@@ -273,7 +273,7 @@ export const eventsRelations = relations(events, ({ one }) => ({
 
 export const rangeEvents = pgTable("range_events", {
   rangeId: uuid("range_id")
-    .default(sql`uuid_generate_v4()`)
+    .defaultRandom()
     .primaryKey()
     .notNull(),
   eventId: uuid("event_id")
@@ -339,7 +339,7 @@ export const journals = pgTable(
   "journals",
   {
     id: uuid("id")
-      .default(sql`uuid_generate_v4()`)
+      .defaultRandom()
       .primaryKey()
       .notNull(),
     userId: text("userId")
@@ -349,7 +349,7 @@ export const journals = pgTable(
     fileUrl: text("file_url"),
     title: text("title"),
     description: text("description"),
-    content: text("content"),
+    content: text("content").default(''),
   },
   (table) => ({
     dateIdx: index("date_idx").on(table.date),
