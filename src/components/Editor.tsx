@@ -7,6 +7,7 @@ import {
 } from "@blocknote/react";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/react/style.css";
+import "@blocknote/mantine/style.css";
 import { useTheme } from "next-themes";
 
 import { useEdgeStore } from "@/lib/edgestore";
@@ -53,8 +54,8 @@ function Editor({ onChange, initialContent, editable }: EditorProps) {
     //   /> */}
       <BlockNoteView
         editor={editor2}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
-        editable={editable}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}        
+        // filePanel={true}
         onChange={() => {
           onChange(JSON.stringify(editor2.document, null, 2));
         }}

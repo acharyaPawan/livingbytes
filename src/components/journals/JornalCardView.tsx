@@ -1,11 +1,14 @@
-import { type JournalType } from "@/app/(site)/(routes)/journal/page"
-import ButtonWithRoute from "./ButtonWithRoute"
+import { type JournalType } from "@/app/(site)/(routes)/journals/page";
+import ButtonWithRoute from "./ButtonWithRoute";
 
-const   JournalCardView = ({Journal}: {Journal:JournalType}) => {
+const JournalCardView = ({ journal }: { journal: JournalType }) => {
+  // const link = `/journal/${Journal}`
   return (
     <>
-    <ButtonWithRoute href="/journal/today">Got to Journal of date: {Journal.date.toLocaleDateString()}</ButtonWithRoute>
+      <ButtonWithRoute href={`/journals/${journal.id}`}>
+        Got to Journal of date: {journal.date.toLocaleDateString()}
+      </ButtonWithRoute>
     </>
-  )
-}
-export default JournalCardView
+  );
+};
+export default JournalCardView;

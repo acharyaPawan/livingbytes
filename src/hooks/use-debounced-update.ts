@@ -1,12 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-function useDebouncedUpdate(callback: (content: string) => void, delay: number): [string, (newContent: string) => void] {
-  const [content, setContent] = useState<string>('');
+function useDebouncedUpdate(callback: (content: string) => void, delay: number): (newContent: string) => void {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const debouncedUpdate = useCallback((newContent: string) => {
-    setContent(newContent);
-
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -25,7 +22,7 @@ function useDebouncedUpdate(callback: (content: string) => void, delay: number):
     };
   }, []);
 
-  return [content, debouncedUpdate];
+  return debouncedUpdate;
 }
 
 export default useDebouncedUpdate;

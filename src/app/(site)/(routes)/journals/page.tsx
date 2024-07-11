@@ -22,7 +22,7 @@ const JournalsDashboard = async () => {
   return (
     <div>
       <div>
-        <ButtonWithRoute href="/journal/today">Write Todays Journal</ButtonWithRoute>
+        <ButtonWithRoute href="/journals/today">Write Todays Journal</ButtonWithRoute>
       </div>
       <p>Journals List</p>
       <JournalListInfinite initialJournals={initialJournals} />

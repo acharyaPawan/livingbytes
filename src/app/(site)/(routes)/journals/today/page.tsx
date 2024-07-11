@@ -17,21 +17,16 @@ export default function TodaysJournal() {
   const update = api.journal.update.useMutation().mutate;
   const journal = response?.data;
 
-  const [content, debouncedUpdate] = useDebouncedUpdate((newContent: string) => {
+  const handleDebouncedUpdate = (newContent: string) => {
     if (journal?.id) {
-    update({
-      id: journal?.id,
-      content: newContent,
-    });
-  }
-  }, 10000);
-
-  // Initialize content when journal data is fetched
-  useEffect(() => {
-    if (journal?.content) {
-      debouncedUpdate(journal.content);
+      update({
+        id: journal?.id,
+        content: newContent,
+      });
     }
-  }, [journal, debouncedUpdate]);
+  };
+
+  const debouncedUpdate = useDebouncedUpdate(handleDebouncedUpdate, 5000);
 
   if (response.isLoading || !journal) {
     return (
@@ -49,18 +44,17 @@ export default function TodaysJournal() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <div>
         <span>Date: </span>
         <span>{journal.date.toDateString()}</span>
         <span>Title: </span>
         <span>{journal.title}</span>
       </div>
-      {/* <div className="overflow-y-scroll border-4 border-red-700 bg-['#F8F8F8']">
-        <div className="lg:md-max-w-4xl mx-auto md:max-w-3xl h-96 p-6">  */}
-          <Editor onChange={debouncedUpdate} initialContent={content} />
-        {/* </div>
-      </div> */}
+      <Editor
+        onChange={debouncedUpdate}
+        initialContent={journal?.content ?? "Loading..."}
+      />
     </div>
   );
 }

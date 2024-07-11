@@ -113,6 +113,7 @@ export const journalRouter = createTRPCRouter({
       }),
     )
     .mutation(async (opts) => {
+
       const { input, ctx } = opts;
 
       const { id, ...rest } = input;
@@ -132,11 +133,13 @@ export const journalRouter = createTRPCRouter({
 
       const document = await ctx.db
         .update(journals)
-        .set({ ...rest })
+        .set({...rest})
         .where(eq(journals.id, existingDocument.id))
         .returning();
+      
+      console.log('document is : ', document)
 
-      return document;
+      // return document;
     }),
   //TODO:DO THE WORK OF REMOVE THANK YOU
   remove: protectedProcedure

@@ -1,7 +1,7 @@
 "use client";
 
 import { fetchMoreJournals } from "@/actions/journals";
-import { type JournalType } from "@/app/(site)/(routes)/journal/page";
+import { type JournalType } from "@/app/(site)/(routes)/journals/page";
 import { useEffect, useRef, useState } from "react";
 import JournalCardView from "./JornalCardView";
 
@@ -88,7 +88,7 @@ export default function PostListInfinite({
     <div>
       <div id="scrollArea" className="flex flex-col gap-2 w-56">
         {journals.map((j) => {
-          return <JournalCardView key={j.id} Journal={j} />;
+          return <JournalCardView key={j.id} journal={j} />;
         })}
         <div className="...">
           {hasMoreJournals ? (
