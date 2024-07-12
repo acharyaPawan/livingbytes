@@ -43,6 +43,33 @@ export function getEndOfDayISOString(): string {
   return endOfDayISOString;
 }
 
+export function getEndOfDay(): Date {
+  // Get the current date in UTC
+  const currentDate = new Date();
+
+  // Set the time to the end of the day
+  currentDate.setUTCHours(23, 59, 59, 999);
+
+  // Format the date as an ISO 8601 string
+  // const endOfDayISOString = currentDate.toISOString();
+
+  return currentDate;
+}
+
+
+export function getStartOfDay(): Date {
+  // Get the current date in UTC
+  const currentDate = new Date();
+
+  // Set the time to the start of the day
+  currentDate.setUTCHours(0, 0, 0, 0);
+
+  // Return the date
+  return currentDate;
+}
+
+
+
 export function formatTimeUntilExpiry(expiryDateString: string): string {
   // Convert the expiry date string to a Date object
   const expiryDate = new Date(expiryDateString);

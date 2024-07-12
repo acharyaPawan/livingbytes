@@ -54,7 +54,8 @@ function Editor({ onChange, initialContent, editable }: EditorProps) {
     //   /> */}
       <BlockNoteView
         editor={editor2}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}        
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
+        editable={editable}     
         // filePanel={true}
         onChange={() => {
           onChange(JSON.stringify(editor2.document, null, 2));

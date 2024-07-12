@@ -128,7 +128,8 @@ const DashboardNav = () => {
             ))}
           </ul>
           <div className='flex justify-end items-start flex-1 flex-col'>
-            {theme === 'light' ? (
+            <ModeToggle />
+            {/* {theme === 'light' ? (
               <div className='xs:hidden grid place-content-center h-8 w-8 dark:text-neutral-300 text-neutral-700 dark:hover:text-neutral-200 hover:text-black'>
                 <Moon className='h-6 w-6' onClick={() => setTheme('dark')} />
               </div>
@@ -136,7 +137,7 @@ const DashboardNav = () => {
               <div className='xs:hidden grid place-content-center h-8 w-8 dark:text-neutral-300 text-neutral-700 dark:hover:text-neutral-200 hover:text-black'>
                 <Sun className='h-6 w-6' onClick={() => setTheme('light')} />
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>

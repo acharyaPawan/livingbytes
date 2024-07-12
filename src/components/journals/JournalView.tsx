@@ -2,9 +2,11 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import useDebouncedUpdate from "@/hooks/use-debounced-update";
+import { getEndOfDay, getEndOfDayISOString, getStartOfDay } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import dynamic from "next/dynamic";
 import { useMemo, useEffect } from "react";
+import { Badge } from "../ui/badge";
 
 export default function JournalViewById({journal}: {journal: any}) {
   const Editor = useMemo(
@@ -25,6 +27,10 @@ export default function JournalViewById({journal}: {journal: any}) {
   }
 
   const debouncedUpdate = useDebouncedUpdate(handleDebouncedUpdate, 5000);
+  // console.log(journal.date)
+
+  const editable = !!(journal.date > getStartOfDay().valueOf())
+  // console.log("editable status: ", editable)
 
   return (
     <div>
@@ -33,8 +39,9 @@ export default function JournalViewById({journal}: {journal: any}) {
         <span>{journal.date.toDateString()}</span>
         <span>Title: </span>
         <span>{journal.title}</span>
+        <span>editable: {editable? <Badge variant={"secondary"}>true</Badge>: <Badge variant={"destructive"}>false</Badge>}</span>
       </div>
-          <Editor onChange={debouncedUpdate} initialContent={journal.content} editable={true} />
+          <Editor onChange={debouncedUpdate} initialContent={journal.content} editable={editable} />
     </div>
   );
 }

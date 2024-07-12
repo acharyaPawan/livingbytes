@@ -28,24 +28,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning>
+      <head />
       <body
         className={`h-screen bg-zinc-100 font-sans text-neutral-950 dark:bg-zinc-900 dark:text-neutral-100 ${inter.variable}`}
         style={{ lineHeight: "1.5" }}
         suppressHydrationWarning={true as const}
       >
-        <TRPCReactProvider cookies={cookies().toString()}>
-          <ThemeProvider
+        <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
+        <TRPCReactProvider cookies={cookies().toString()}>
             <EdgeStoreProvider>{children}</EdgeStoreProvider>
             <Toaster />
-            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-          </ThemeProvider>
-        </TRPCReactProvider>
+            {/* <ReactQueryDevtools initialIsOpen={false} /> */}        </TRPCReactProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

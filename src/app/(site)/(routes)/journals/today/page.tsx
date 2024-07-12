@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import useDebouncedUpdate from "@/hooks/use-debounced-update";
 import { api } from "@/trpc/react";
@@ -50,10 +52,12 @@ export default function TodaysJournal() {
         <span>{journal.date.toDateString()}</span>
         <span>Title: </span>
         <span>{journal.title}</span>
+        <span>editable: <Badge variant={"secondary"}>true</Badge></span>
       </div>
       <Editor
         onChange={debouncedUpdate}
         initialContent={journal?.content ?? "Loading..."}
+        editable={true}
       />
     </div>
   );
