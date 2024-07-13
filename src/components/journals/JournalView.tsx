@@ -7,6 +7,8 @@ import { api } from "@/trpc/react";
 import dynamic from "next/dynamic";
 import { useMemo, useEffect } from "react";
 import { Badge } from "../ui/badge";
+import { Input } from "../ui/input";
+import InputWithButton from "./InputForTitle";
 
 export default function JournalViewById({journal}: {journal: any}) {
   const Editor = useMemo(
@@ -33,11 +35,10 @@ export default function JournalViewById({journal}: {journal: any}) {
   // console.log("editable status: ", editable)
 
   return (
-    <div>
-      <div>
-        <span>Date: </span>
-        <span>{journal.date.toDateString()}</span>
-        <span>Title: </span>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col flex-1 gap-1">
+        <span>Date: {journal.date.toDateString()}</span>
+        <InputWithButton>Title: </InputWithButton>
         <span>{journal.title}</span>
         <span>editable: {editable? <Badge variant={"secondary"}>true</Badge>: <Badge variant={"destructive"}>false</Badge>}</span>
       </div>

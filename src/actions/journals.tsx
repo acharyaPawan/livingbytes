@@ -11,7 +11,7 @@ export const getInitialJournals = async () => {
   try {
     const returnedJournals = await db.query.journals.findMany({
       orderBy: (journals, { desc }) => desc(journals.date),
-      limit: 3,
+      // limit: 3,
     });
     console.log("journals are ", returnedJournals[0]);
     return returnedJournals;

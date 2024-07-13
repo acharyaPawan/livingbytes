@@ -107,6 +107,7 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
       closeFun()
       router.refresh();
     });
+    // await revalidatePath("/tak")
 
     toast({
       title: "You submitted the following values:",
