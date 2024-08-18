@@ -13,7 +13,7 @@ const queryKey = 'getTasks'
     // console.log('data is ', data[0]?.tasks)
 
   return (
-    <div>
+    <div className="text-black dark:text-white">
     <div>
       <h1 className="font-serif text-2xl">TaskMaster</h1>
     </div>

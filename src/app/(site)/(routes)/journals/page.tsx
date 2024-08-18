@@ -13,7 +13,7 @@ const JournalsDashboard = async () => {
       <div>
         Nothing in the database, create journals to view here
         <div>
-        <ButtonWithRoute href="/journal/today">Write Todays Journal</ButtonWithRoute>
+        <ButtonWithRoute href="/journals/today">Write Todays Journal</ButtonWithRoute>
         </div>
       </div>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import InputWithButton from "@/components/journals/InputForTitle";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,9 +51,11 @@ export default function TodaysJournal() {
       <div>
         <span>Date: </span>
         <span>{journal.date.toDateString()}</span>
-        <span>Title: </span>
+        <InputWithButton journalId={journal.id}>Title: </InputWithButton>
         <span>{journal.title}</span>
-        <span>editable: <Badge variant={"secondary"}>true</Badge></span>
+        <span>
+          editable: <Badge variant={"secondary"}>true</Badge>
+        </span>
       </div>
       <Editor
         onChange={debouncedUpdate}

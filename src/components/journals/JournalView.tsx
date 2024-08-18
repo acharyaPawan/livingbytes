@@ -38,7 +38,7 @@ export default function JournalViewById({journal}: {journal: any}) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col flex-1 gap-1">
         <span>Date: {journal.date.toDateString()}</span>
-        <InputWithButton>Title: </InputWithButton>
+        <InputWithButton journalId={journal.id}>Title: </InputWithButton>
         <span>{journal.title}</span>
         <span>editable: {editable? <Badge variant={"secondary"}>true</Badge>: <Badge variant={"destructive"}>false</Badge>}</span>
       </div>

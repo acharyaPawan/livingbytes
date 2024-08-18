@@ -35,7 +35,7 @@ type TaskItemProps = {
         return (
           <>
             <div className='flex gap-2'>
-              <Badge>{task.status}</Badge>
+              <Badge variant={'secondary'}>{task.status}</Badge>
               <span className='font-semibold'>{task.title}</span>
               <span className='font-light'>{task.description}</span>
               <Badge variant={'outline'}>{`created ${formatTimeDifference(task.createdOn.toString())}`}</Badge>

@@ -17,6 +17,10 @@ export const menuLinks = [
     title: "Journals",
   },
   {
+    id: "tasks",
+    title: "Tasks"
+  },
+  {
     id: "reading",
     title: "Reading",
   },
@@ -92,9 +96,9 @@ const DashboardNav = () => {
                       key={nav.id}
                       className={`font-poppins font-normal cursor-pointer outline-1 text-[16px] text-zinc-700 hover:bg-neutral-200 dark:hover:bg-[#292f36] hover:text-zinc-950 focus-within:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200 dark:focus-within:text-zinc-200 ${active === nav.title ? "text-white" : "text-dimWhite"
                         } px-2 py-[0.375rem] rounded-[0.375rem]`}
-                      onClick={() => setActive(nav.title)}
+                      onClick={() => setActive(nav.title) }
                     >
-                      <Link href={`#${nav.id}`}>{nav.title}</Link>
+                      <Link href={`/${nav.id}`}>{nav.title}</Link>
                     </li>
                   ))}
                 </ul>
@@ -123,7 +127,7 @@ const DashboardNav = () => {
                   } ${index === rightMenuLinks.length - 1 ? "mb-0" : "mb-4"}`}
                 onClick={() => setActive(nav.title)}
               >
-                <Link href={`#${nav.id}`}>{nav.title}</Link>
+                <Link href={`/${nav.id}`}>{nav.title}</Link>
               </li>
             ))}
           </ul>
