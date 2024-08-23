@@ -1,6 +1,6 @@
 "use server";
 
-import { getEndOfDayISOString } from "@/lib/utils";
+import { getEndOfDay, getEndOfDayISOString } from "@/lib/utils";
 import { authOptions, getServerAuthSession } from "@/server/auth";
 import db from "@/server/db";
 import { db as dbForTransaction } from "@/server/db/pool";
@@ -144,7 +144,7 @@ export async function createNewTask(values: formdata) {
             priorityLabel: values.priority,
             status: "Not Started",
             viewAs: values.viewAs,
-            expiresOn: getEndOfDayISOString(),
+            expiresOn: getEndOfDay(),
             remark: values.remark,
           })
           .returning();

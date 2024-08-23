@@ -9,7 +9,7 @@ const queryKey = 'getTasks'
 
  const TaskMaster = async () => {
 
-    const data =  await api.task.getCategorizedTasks.query()
+  const data =  await api.task.getCategorizedTasks.query()
     // console.log('data is ', data[0]?.tasks)
 
   return (
