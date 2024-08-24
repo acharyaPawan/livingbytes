@@ -20,6 +20,7 @@ const data = await db.query.categories.findMany({
         status: true,
         viewAs: true,
         priority: true,
+        priorityLabel:true,
         remark: true,
       },
       with: {

@@ -26,9 +26,21 @@ import {
 import { AddNewForm } from "./AddNewForm"
 import { ScrollArea } from "../ui/scroll-area"
 import { EditTaskForm } from "./EditTaskForm"
-import { Task } from "@/types/types"
+import { PriorityLabels, Task, ViewAsType } from "@/types/types"
 
-export function EditTask({data, categoryName}: {data: Task, categoryName: string}) {
+interface EditTaskProps {
+  categoryName: string;
+  data: {
+    id: string,
+    title: string,
+    description?: string | null,
+    remark?: string | null,
+    priorityLabel?: PriorityLabels | null,
+    viewAs: ViewAsType
+  }
+}
+
+export function EditTask({data, categoryName}: EditTaskProps) {
   const [open, setOpen] = React.useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
   

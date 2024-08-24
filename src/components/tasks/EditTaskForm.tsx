@@ -32,8 +32,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { EditTaskAction, EditTaskResponse, createNewTask } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { ExtendedFormValues, Task } from "@/types/types";
-
+import { ExtendedFormValues, PriorityLabels, Task, ViewAsType } from "@/types/types";
 const PRIORITYENUM = [
   "High",
   "Less",
@@ -83,8 +82,22 @@ const categoryListArray = [
 
 export type formdata =  z.infer<typeof formSchema>
 
+interface EditTaskFormProps {
+  className?: string,
+  closeFun: () => void,
+  data: {
+    id: string,
+    title: string,
+    description?: string | null,
+    remark?: string | null,
+    priorityLabel?: PriorityLabels | null,
+    viewAs: ViewAsType
+  },
+  categoryName: string
+}
 
-export function EditTaskForm({className, closeFun, data, categoryName}: {className?: string, closeFun: () => void, data: Task, categoryName: string}) {
+
+export function EditTaskForm({className, closeFun, data, categoryName}: EditTaskFormProps) {
   const router = useRouter()
 
   const [isPending, startTransition] = useTransition();

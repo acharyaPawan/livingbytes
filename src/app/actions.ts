@@ -9,6 +9,7 @@ import {
   events,
   rangeEvents,
   singleDayEvents,
+  subtasks,
   tasks,
 } from "@/server/db/schema";
 
@@ -47,6 +48,7 @@ type response =
       data?: {
         insertedCategory?: InferInsertModel<typeof categories>;
         insertedTask?: InferInsertModel<typeof tasks>;
+        insertedSubtask?: InferInsertModel<typeof subtasks>;
       };
     };
 
@@ -135,6 +137,7 @@ export async function createNewTask(values: formdata) {
         const [insertedTask] = await tx
           .insert(tasks)
           .values({
+            userId: session.user.id,
             categoryId: data?.insertedCategory?.id,
             title: values.title,
             description: values.description,
@@ -181,6 +184,166 @@ export async function createNewTask(values: formdata) {
     return actionResponse;
   }
 }
+
+
+
+
+export async function createNewSubtask(values: formdata, taskId: string) {
+  console.log("createNewTask Server component processing");
+  console.log(values);
+  const session = await getServerSession(authOptions);
+
+
+  if (!session) {
+    const response: response = {
+      error: { authorizationError: true },
+    };
+    return response;
+  }
+  console.log("We are here");
+
+  let actionResponse: response & {taskDonotExistError?: boolean};
+  const data: {
+    insertedCategory?: InferInsertModel<typeof categories>;
+    insertedSubtask?: InferInsertModel<typeof subtasks>;
+  } = {};
+  try {
+    const dbResponse = await dbForTransaction.transaction(async (tx) => {
+      let skipCategoryGeneration = false;
+      const result = await tx
+        .select()
+        .from(categories)
+        .where(
+          and(
+            eq(categories.userId, session.user.id),
+            eq(categories.title, values.category),
+          ),
+        );
+      if (result.length > 0) {
+        actionResponse = { error: { categoryNameConflict: true } };
+        console.log("response is: ", actionResponse);
+        skipCategoryGeneration = true;
+        data.insertedCategory = result[0];
+      }
+      console.log("1st step completed without error");
+
+      if (skipCategoryGeneration === false) {
+        const [insertedCategory] = await tx
+          .insert(categories)
+          .values({
+            userId: session.user.id,
+            title: values.category,
+            priority: priorityNumberMap.Moderate.toString(),
+          })
+          .returning();
+
+        if (!insertedCategory) {
+          actionResponse = {
+            error: {
+              categoryDbError: true,
+            },
+          };
+          console.log("response is: ", actionResponse);
+          return actionResponse;
+        }
+        data.insertedCategory = insertedCategory;
+      }
+
+      console.log("2nd step completed without error");
+
+      //Additional 
+      // Check if the task even exist
+      try {
+        const res = await db.query.tasks.findFirst({
+          columns: {
+             title: true,
+          },
+          where: (tasks, {and, eq}) => and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id))
+        })
+
+        if (!res) {
+          actionResponse.taskDonotExistError = true
+          return actionResponse
+        }
+
+        console.log('result of finding task for subtask is:', res)
+      } catch (e) {
+        actionResponse.taskDonotExistError = true
+        return actionResponse
+      }
+
+      if (data?.insertedCategory?.id) {
+        const result = await tx
+          .select()
+          .from(tasks)
+          .where(
+            and(
+              eq(tasks.categoryId, data?.insertedCategory?.id),
+              eq(tasks.title, values.title),
+            ),
+          );
+        if (result.length > 0) {
+          actionResponse = { error: { taskNameConflict: true } };
+          console.log("response is: ", actionResponse);
+          console.log("Further process stopped");
+          return actionResponse;
+        }
+
+        console.log("3rd step completed without error");
+
+        const [insertedSubtask] = await tx
+          .insert(subtasks)
+          .values({
+            taskId: taskId,
+            categoryId: data?.insertedCategory?.id,
+            title: values.title,
+            description: values.description,
+            priority: (
+              priorityNumberMap[values.priority] + statusMap["Not Started"]
+            ).toString(),
+            priorityLabel: values.priority,
+            status: "Not Started",
+            viewAs: values.viewAs,
+            expiresOn: getEndOfDay(),
+            remark: values.remark,
+          })
+          .returning();
+
+        if (!insertedSubtask) {
+          actionResponse = { error: { taskDbError: true } };
+          console.log("response is: ", actionResponse);
+          console.log("further step aborted");
+          return actionResponse;
+        }
+
+        data.insertedSubtask = insertedSubtask;
+      }
+      console.log("4rth step completed without error");
+
+      actionResponse = {
+        data: {
+          insertedCategory: data.insertedCategory,
+          insertedSubtask: data.insertedSubtask,
+        },
+      };
+      // console.log("response is: ", actionResponse);
+      return actionResponse;
+    });
+    return dbResponse;
+  } catch (err) {
+    console.log("Error is: ", err);
+    actionResponse = {
+      error: {
+        errorMessage: err,
+      },
+    };
+    // revalidatePath("./tasks");
+    return actionResponse;
+  }
+}
+
+
+
 
 export interface EditTaskResponse {
   data?: InferSelectModel<typeof tasks>;
@@ -257,7 +420,7 @@ import { formSchema } from "@/components/events/AddNewEvent";
 import { ZodError } from "zod";
 import {type InferInsertModel,type InferSelectModel, and, eq, ilike } from "drizzle-orm";
 import type{ formdata } from "@/components/tasks/AddNewForm";
-import type { ExtendedFormValues } from "@/types/types";
+import type { ExtendedFormValues, TaskType } from "@/types/types";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user

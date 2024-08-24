@@ -28,7 +28,7 @@ export const status = pgEnum("Status", [
   "Finished",
   "In Progress",
   "Not Started",
-  "EXPIRED"
+  "EXPIRED",
 ]);
 export const trackerFrequency = pgEnum("TrackerFrequency", [
   "Yearly",
@@ -65,10 +65,8 @@ export const user = pgTable(
 
 export const usersRelations = relations(user, ({ many }) => ({
   journals: many(journals),
+  tasks: many(tasks),
 }));
-
-
-
 
 export const session = pgTable("session", {
   sessionToken: text("sessionToken").primaryKey().notNull(),
@@ -79,10 +77,7 @@ export const session = pgTable("session", {
 });
 
 export const categories = pgTable("categories", {
-  id: uuid("id")
-    .defaultRandom()
-    .primaryKey()
-    .notNull(),
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -98,19 +93,18 @@ export const categories = pgTable("categories", {
   description: text("description"),
 });
 
-export const categoriesRelation = relations(categories, ({many}) => ({
-  tasks: many(tasks)
-}))
-
+export const categoriesRelation = relations(categories, ({ many }) => ({
+  tasks: many(tasks),
+}));
 
 export const tasks = pgTable("tasks", {
-  id: uuid("id")
-    .defaultRandom()
-    .primaryKey()
-    .notNull(),
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id")
     .notNull()
     .references(() => categories.id, { onDelete: "cascade" }),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }), //added
   title: text("title").notNull(),
   description: text("description"),
   priority: numeric("priority").notNull(),
@@ -138,24 +132,21 @@ export const tasks = pgTable("tasks", {
   flexible: boolean("flexible").default(false),
 });
 
-
-
-
-export const tasksRelations = relations(tasks, ({one, many})=> ({
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
   category: one(categories, {
     fields: [tasks.categoryId],
-    references: [categories.id]
+    references: [categories.id],
   }),
   trackersTasksMap: many(tasksToTrackers),
-  subtasks: many(subtasks)
-}))
-
+  subtasks: many(subtasks),
+  user: one(user, {
+    fields: [tasks.userId],
+    references: [user.id],
+  }),
+}));
 
 export const trackers = pgTable("trackers", {
-  id: uuid("id")
-    .defaultRandom()
-    .primaryKey()
-    .notNull(),
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
   // taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   frequency: trackerFrequency("frequency").notNull(),
@@ -171,33 +162,35 @@ export const trackers = pgTable("trackers", {
   status: trackerStatus("status").notNull(),
 });
 
-
-export const trackerRelation = relations(trackers, ({many}) => ({
-  tasks: many(tasksToTrackers)
-}))
-
-// junction table
-export const tasksToTrackers = pgTable('tasks_to_trackers', {
-  taskId: uuid('task_id').references(() => tasks.id),
-  trackerId: uuid('tracker_id').references(() => trackers.id),
-});
-
-export const tasksToTrackersRelations = relations(tasksToTrackers, ({ one }) => ({
-  task: one(tasks, {
-    fields: [tasksToTrackers.taskId],
-    references: [tasks.id],
-  }),
-  tracker: one(trackers, {
-    fields: [tasksToTrackers.trackerId],
-    references: [trackers.id],
-  }),
+export const trackerRelation = relations(trackers, ({ many }) => ({
+  tasks: many(tasksToTrackers),
 }));
 
+// junction table
+export const tasksToTrackers = pgTable("tasks_to_trackers", {
+  taskId: uuid("task_id").references(() => tasks.id),
+  trackerId: uuid("tracker_id").references(() => trackers.id),
+});
+
+export const tasksToTrackersRelations = relations(
+  tasksToTrackers,
+  ({ one }) => ({
+    task: one(tasks, {
+      fields: [tasksToTrackers.taskId],
+      references: [tasks.id],
+    }),
+    tracker: one(trackers, {
+      fields: [tasksToTrackers.trackerId],
+      references: [trackers.id],
+    }),
+  }),
+);
+
 export const subtasks = pgTable("subtasks", {
-  id: uuid("id")
-    .defaultRandom()
-    .primaryKey()
-    .notNull(),
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
   taskId: uuid("task_id")
     .notNull()
     .references(() => tasks.id, { onDelete: "cascade" }),
@@ -212,32 +205,28 @@ export const subtasks = pgTable("subtasks", {
   createdOn: timestamp("created_on", {
     precision: 3,
     withTimezone: true,
-    mode: "string",
+    mode: "date",
   }).defaultNow(),
   expiresOn: timestamp("expires_on", {
     precision: 3,
     withTimezone: true,
-    mode: "string",
+    mode: "date",
   }),
   completedOn: timestamp("completed_on", {
     precision: 3,
     withTimezone: true,
-    mode: "string",
+    mode: "date",
   }),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
 });
 
-
-export const subtasksRelations = relations(subtasks, ({one}) => ({
+export const subtasksRelations = relations(subtasks, ({ one }) => ({
   task: one(tasks, {
     fields: [subtasks.taskId],
-    references: [tasks.id]
-  })
-}))
-
-
-
+    references: [tasks.id],
+  }),
+}));
 
 export const schedules = pgTable(
   "schedules",
@@ -267,7 +256,6 @@ export const schedules = pgTable(
     };
   },
 );
-
 
 // export const schedulesRelations = relations(schedules, ({one}) => ({
 //   none
@@ -332,10 +320,7 @@ export const eventsRelations = relations(events, ({ one }) => ({
 }));
 
 export const rangeEvents = pgTable("range_events", {
-  rangeId: uuid("range_id")
-    .defaultRandom()
-    .primaryKey()
-    .notNull(),
+  rangeId: uuid("range_id").defaultRandom().primaryKey().notNull(),
   eventId: uuid("event_id")
     .notNull()
     .references(() => events.id, { onDelete: "cascade" }),
@@ -398,10 +383,7 @@ export const account = pgTable(
 export const journals = pgTable(
   "journals",
   {
-    id: uuid("id")
-      .defaultRandom()
-      .primaryKey()
-      .notNull(),
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -409,7 +391,7 @@ export const journals = pgTable(
     fileUrl: text("file_url"),
     title: text("title"),
     description: text("description"),
-    content: text("content").default(''),
+    content: text("content").default(""),
   },
   (table) => ({
     dateIdx: index("date_idx").on(table.date),

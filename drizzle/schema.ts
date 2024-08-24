@@ -10,6 +10,7 @@ export const trackerStatus = pgEnum("TrackerStatus", ['In Progress', 'Not Starte
 export const eventType = pgEnum("eventType", ['Range', 'Single'])
 
 
+
 export const user = pgTable("user", {
 	id: text("id").primaryKey().notNull(),
 	name: text("name"),
@@ -47,7 +48,7 @@ export const tasks = pgTable("tasks", {
 	title: text("title").notNull(),
 	description: text("description"),
 	priority: numeric("priority").notNull(),
-	priorityLabel: priorityLabels("priority_label"),
+	priorityLabel: priorityLabels("priority_label").default(priorityLabels.enumValues[2]),
 	status: status("status").notNull(),
 	viewAs: viewAs("view_as").notNull(),
 	specialLabels: text("special_labels").array(),
@@ -76,14 +77,14 @@ export const subtasks = pgTable("subtasks", {
 	title: text("title").notNull(),
 	description: text("description"),
 	priority: numeric("priority").notNull(),
-	priorityLabel: priorityLabels("priority_label"),
+	priorityLabel: priorityLabels("priority_label").default("Moderate"),
 	status: status("status").notNull(),
 	viewAs: viewAs("view_as").notNull(),
 	specialLabels: text("special_labels").array(),
 	remark: text("remark"),
-	createdOn: timestamp("created_on", { precision: 3, withTimezone: true, mode: 'string' }).defaultNow(),
-	expiresOn: timestamp("expires_on", { precision: 3, withTimezone: true, mode: 'string' }),
-	completedOn: timestamp("completed_on", { precision: 3, withTimezone: true, mode: 'string' }),
+	createdOn: timestamp("created_on", { precision: 3, withTimezone: true, mode: 'date' }).defaultNow(),
+	expiresOn: timestamp("expires_on", { precision: 3, withTimezone: true, mode: 'date' }),
+	completedOn: timestamp("completed_on", { precision: 3, withTimezone: true, mode: 'date' }),
 	locked: boolean("locked").default(false),
 	flexible: boolean("flexible").default(false),
 });

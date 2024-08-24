@@ -31,9 +31,10 @@ import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { z } from "zod";
-import { createNewTask } from "@/app/actions";
+import { createNewSubtask, createNewTask } from "@/app/actions";
 import { revalidatePath } from "next/cache";
 import { useRouter } from "next/navigation";
+import { TaskType } from "@/types/types";
 
 const PRIORITYENUM = [
   "High",
@@ -75,7 +76,7 @@ const CATEGORYLIST = [
 
 export type formdata =  z.infer<typeof formSchema>
 
-export function AddNewForm({className, closeFun}: {className?: string, closeFun: () => void}) {
+export function AddNewForm({className, closeFun, subtask}: {className?: string, closeFun: () => void, subtask?: {taskId: string}}) {
   const router = useRouter()
 
   const [isPending, startTransition] = useTransition();
@@ -103,7 +104,11 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     startTransition(async () => {
+      if (!subtask?.taskId) {
       const response = await createNewTask(values);
+      } else {
+        const response = await createNewSubtask(values, subtask.taskId);
+      }
       closeFun()
       router.refresh();
     });
@@ -131,11 +136,11 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder="Enter title for the task"
+                  placeholder={`Enter title for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
                   {...field}
                 />
               </FormControl>
-              <FormDescription>This is title for your task.</FormDescription>
+              <FormDescription>This is title for your {(!subtask?.taskId) ? "tasks": "subtasks"}.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -149,12 +154,12 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder="Enter description for the task."
+                  placeholder={`Enter description for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                This is description for your task.
+                This is description for your {(!subtask?.taskId) ? "task": "subtask"}.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -176,7 +181,7 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category for this task." />
+                    <SelectValue placeholder={`Select a category for this ${(!subtask?.taskId) ? "task": "subtask"}`} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -207,12 +212,12 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
                 <FormControl>
                   <Input
                     autoComplete="off"
-                    placeholder="Enter custom category for the task"
+                    placeholder={`Enter custom category for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
-                  This is the custom category for your task.Edit to change name.
+                  This is the custom category for your {(!subtask?.taskId) ? "task": "subtask"}.Edit to change name.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -252,11 +257,11 @@ export function AddNewForm({className, closeFun}: {className?: string, closeFun:
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder="Enter remark for the task"
+                  placeholder={`Enter remark for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
                   {...field}
                 />
               </FormControl>
-              <FormDescription>This is remark for your task.</FormDescription>
+              <FormDescription>This is remark for your {(!subtask?.taskId) ? "task": "subtask"}.</FormDescription>
               <FormMessage />
             </FormItem>
           )}

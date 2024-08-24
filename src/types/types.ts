@@ -5,6 +5,7 @@ export type TaskStatus = "Not Started" | "In Progress" | "Finished" | "Paused" |
 export type PriorityLabels = "High" | "Less" | "Moderate" | "Very High" | "Very Less";
 export type TrackerFrequency = "Daily" | "Weekly" | "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
 export type ViewAsType = "Checkbox" | "Status";
+export type TaskType = "tasks" | "subtasks"
 
 //Priority number give it values multiple of 10 within reange of 100.
 
@@ -38,19 +39,21 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  status: string;
+  status: TaskStatus;
   priority: number;
   locked: boolean;
   flexible: boolean;
-  priorityLabel: PriorityLabels;
+  // priorityLabel: PriorityLabels;
   createdOn: Date;
   expiresOn: Date;
   completedOn: Date;
   viewAs: ViewAsType;
-  specialLabels: string[];
+  // specialLabels: string[];
   remark: string;
-  subtasks: Subtask[];
-  tracker: Tracker[];
+  // subtasks: Subtask[];
+  // tracker: Tracker[];
+  subtasks: any;
+  tracker: any;
   categoryId: string;
 }
 
