@@ -91,6 +91,7 @@ interface EditTaskFormProps {
     description?: string | null,
     remark?: string | null,
     priorityLabel?: PriorityLabels | null,
+    locked: boolean,
     viewAs: ViewAsType
   },
   categoryName: string

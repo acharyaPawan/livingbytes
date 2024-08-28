@@ -16,18 +16,35 @@ const data = await db.query.categories.findMany({
         expiresOn: true,
         title: true,
         description: true,
+        priorityLabel: true,
         locked: true,
         status: true,
         viewAs: true,
         priority: true,
-        priorityLabel:true,
         remark: true,
       },
       with: {
         subtasks: {
           columns: {
             title: true,
+            description: true,
+            remark: true,
+            priorityLabel: true,
+            createdOn: true,
+            expiresOn: true,
+            categoryId: true,
+            locked: true,
+            id: true,
+            status: true,
+            viewAs: true,
           },
+          with: {
+            category: {
+              columns: {
+                title: true
+              }
+            }
+          }
         },
         trackersTasksMap: {
           columns: {},
@@ -40,7 +57,8 @@ const data = await db.query.categories.findMany({
           },
         },
       },
-      where: and(isNull(tasks.completedOn), lt(tasks.expiresOn, new Date())),
+      where: (tasks, {eq}) => eq(tasks.userId, "xyz"),
+      // where: and(isNull(tasks.completedOn), lt(tasks.expiresOn, new Date())),
       orderBy: (tasks, { desc, asc }) => [
         desc(tasks.priority),
         asc(tasks.createdOn),

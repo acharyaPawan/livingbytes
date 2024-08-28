@@ -28,7 +28,7 @@ export const status = pgEnum("Status", [
   "Finished",
   "In Progress",
   "Not Started",
-  "EXPIRED",
+  "Expired",
 ]);
 export const trackerFrequency = pgEnum("TrackerFrequency", [
   "Yearly",
@@ -95,6 +95,7 @@ export const categories = pgTable("categories", {
 
 export const categoriesRelation = relations(categories, ({ many }) => ({
   tasks: many(tasks),
+  subtasks: many(subtasks),
 }));
 
 export const tasks = pgTable("tasks", {
@@ -108,7 +109,7 @@ export const tasks = pgTable("tasks", {
   title: text("title").notNull(),
   description: text("description"),
   priority: numeric("priority").notNull(),
-  priorityLabel: priorityLabels("priority_label"),
+  priorityLabel: priorityLabels("priority_label").default("Moderate"),
   status: status("status").notNull(),
   viewAs: viewAs("view_as").notNull(),
   specialLabels: text("special_labels").array(),
@@ -160,6 +161,7 @@ export const trackers = pgTable("trackers", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   status: trackerStatus("status").notNull(),
+  archived: boolean("archived").default(false)
 });
 
 export const trackerRelation = relations(trackers, ({ many }) => ({
@@ -226,6 +228,10 @@ export const subtasksRelations = relations(subtasks, ({ one }) => ({
     fields: [subtasks.taskId],
     references: [tasks.id],
   }),
+  category: one(categories, {
+    fields: [subtasks.categoryId],
+    references: [categories.id],
+  })
 }));
 
 export const schedules = pgTable(

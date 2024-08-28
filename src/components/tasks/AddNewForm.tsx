@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
@@ -29,12 +29,16 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { CalendarIcon, Plus } from "lucide-react";
 import { z } from "zod";
 import { createNewSubtask, createNewTask } from "@/app/actions";
 import { revalidatePath } from "next/cache";
 import { useRouter } from "next/navigation";
 import { TaskType } from "@/types/types";
+import { priorityLabels } from "@/server/db/schema";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { format } from "date-fns";
+import { Calendar } from "../ui/calendar";
 
 const PRIORITYENUM = [
   "High",
@@ -48,9 +52,17 @@ const CATEGORYLIST = [
   "Morning Routine",
   "Work Tasks",
   "Household Chores",
+  "Not Specified",
 ] as const;
 
- const formSchema = z.object({
+const EXPIRYENUM = [
+  "By End Of Today",
+  "By Tomorrow",
+  "Set Custom",
+  "In 5 Hours",
+] as const;
+
+const formSchema = z.object({
   title: z.string().min(3, {
     message: "Title must be at least 3 characters.",
   }),
@@ -58,9 +70,10 @@ const CATEGORYLIST = [
   priority: z.enum(PRIORITYENUM, {
     required_error: "You need to select a priority level type.",
   }),
-  remark: z.string().min(3, {
-    message: "Remark must be at least 3 characters.",
-  }),
+  // remark: z.string().min(3, {
+  //   message: "Remark must be at least 3 characters.",
+  // }).optional(),
+  remark: z.string().optional(),
   viewAs: z.enum(VIEWASENUM, {
     required_error: "You need to select a option below.",
   }),
@@ -68,26 +81,85 @@ const CATEGORYLIST = [
     .enum(CATEGORYLIST, {
       required_error: "Select one from dropdown.",
     })
-    .or(z.string().min(3, {
-      message: "Category name must be 3 character long."
-    })),
-  customCategory: z.string().optional(),
+    .or(
+      z.string().min(3, {
+        message: "Category name must be 3 character long.",
+      }),
+    ),
+  expiresOn: z.date({
+    required_error: "Expiry date must be given.",
+  }),
+  shortListedExpiresOn: z.enum(EXPIRYENUM).optional(),
+  // customCategory: z.string().optional(),
 });
 
-export type formdata =  z.infer<typeof formSchema>
+export type formdata = z.infer<typeof formSchema>;
 
-export function AddNewForm({className, closeFun, subtask}: {className?: string, closeFun: () => void, subtask?: {taskId: string}}) {
-  const router = useRouter()
+
+// Function to format the time as HH:MM
+const formatTime = (date: Date) => {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+export function AddNewForm({
+  className,
+  closeFun,
+  subtask,
+}: {
+  className?: string;
+  closeFun: () => void;
+  subtask?: { taskId: string };
+}) {
+  const router = useRouter();
 
   const [isPending, startTransition] = useTransition();
 
   const [isCustomCategory, setCustomCategory] = useState(false);
+  const [isCustomExpiry, setCustomExpiry] = useState(false);
 
   const handleCategoryChange = (selectedCategory: string) => {
     setCustomCategory(selectedCategory === "Custom");
   };
 
- 
+  const handleExpiryChange = (selectedExpiry: string) => {
+    switch (selectedExpiry) {
+      case "By End Of Today":
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+        form.setValue("expiresOn", endOfToday);
+        setCustomExpiry(false);
+
+        break;
+      case "By Tomorrow":
+        const endOfTomorrow = new Date();
+        endOfTomorrow.setDate(endOfTomorrow.getDate() + 1); // Move to the next day
+        endOfTomorrow.setHours(23, 59, 59, 999); // Set to 11:59:59 PM of that day
+        form.setValue("expiresOn", endOfTomorrow);
+        setCustomExpiry(false);
+
+        break;
+      case "In 5 Hours":
+        const currentDate = new Date(); // Get the current date and time
+
+        // Add 5 hours to the current time
+        const futureDate = new Date(currentDate.getTime() + 5 * 60 * 60 * 1000);
+        form.setValue("expiresOn", futureDate);
+        setCustomExpiry(false);
+        break;
+      case "Set Custom":
+        setCustomExpiry(true);
+        break;
+      default:
+        setCustomExpiry(false);
+        form.setError("shortListedExpiresOn", {
+          message: `${selectedExpiry} is not valid option.`,
+        });
+        break;
+    }
+  };
+
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,9 +167,12 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
       title: "",
       description: "",
       remark: "",
+      priority: "Moderate",
+      viewAs: "Checkbox",
+      category: "Not Specified",
+      expiresOn: new Date(new Date().setHours(23, 59, 59, 999)),
     },
   });
-
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -105,11 +180,11 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
     // ✅ This will be type-safe and validated.
     startTransition(async () => {
       if (!subtask?.taskId) {
-      const response = await createNewTask(values);
+        const response = await createNewTask(values);
       } else {
         const response = await createNewSubtask(values, subtask.taskId);
       }
-      closeFun()
+      closeFun();
       router.refresh();
     });
     // await revalidatePath("/tak")
@@ -124,9 +199,39 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
     });
     console.log(values);
   }
+
+  const [timeValue, setTimeValue] = useState<string>("00:00");
+
+  useEffect(() => {
+    const now = new Date(); // Get current date and time
+    setTimeValue(formatTime(now)); // Set state with current time
+  }, []);
+
+  const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setTimeValue(e.target.value);
+
+    // Get the current "expiresOn" value
+    const currentExpiresOn = form.getValues("expiresOn");
+
+    if (currentExpiresOn) {
+      const [hours, minutes] = e.target.value.split(":").map(Number);
+
+      // Create a new Date object from the current "expiresOn" value
+      const updatedDate = new Date(currentExpiresOn);
+
+      // Set the new time on the Date object
+      updatedDate.setHours(hours ?? 10, minutes, 0, 0);
+
+      // Update the form's "expiresOn" value with the new date and time
+      form.setValue("expiresOn", updatedDate);
+    }
+  };
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className={cn('space-y-8', className)}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className={cn("space-y-8", className)}
+      >
         <FormField
           control={form.control}
           name="title"
@@ -136,11 +241,14 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder={`Enter title for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
+                  placeholder={`Enter title for the ${!subtask?.taskId ? "task" : "subtask"}.`}
                   {...field}
                 />
               </FormControl>
-              <FormDescription>This is title for your {(!subtask?.taskId) ? "tasks": "subtasks"}.</FormDescription>
+              <FormDescription>
+                This is title for your {!subtask?.taskId ? "tasks" : "subtasks"}
+                .
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -154,12 +262,13 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder={`Enter description for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
+                  placeholder={`Enter description for the ${!subtask?.taskId ? "task" : "subtask"}.`}
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                This is description for your {(!subtask?.taskId) ? "task": "subtask"}.
+                This is description for your{" "}
+                {!subtask?.taskId ? "task" : "subtask"}.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -170,7 +279,7 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prority</FormLabel>
+              <FormLabel>Category</FormLabel>
 
               <Select
                 onValueChange={(value) => {
@@ -181,7 +290,9 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={`Select a category for this ${(!subtask?.taskId) ? "task": "subtask"}`} />
+                    <SelectValue
+                      placeholder={`Select a category for this ${!subtask?.taskId ? "task" : "subtask"}`}
+                    />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -192,6 +303,7 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
                   <SelectItem value="Household Chores">
                     Household Chores
                   </SelectItem>
+                  <SelectItem value="Not Specified">Not Specified</SelectItem>
                   <SelectItem value="Custom">Custom</SelectItem>
 
                   {/* Location where i want selectitem but that item should be input field and it sends vlaue that we input.For your instance this is for custom category. */}
@@ -212,12 +324,13 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
                 <FormControl>
                   <Input
                     autoComplete="off"
-                    placeholder={`Enter custom category for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
+                    placeholder={`Enter custom category for the ${!subtask?.taskId ? "task" : "subtask"}.`}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
-                  This is the custom category for your {(!subtask?.taskId) ? "task": "subtask"}.Edit to change name.
+                  This is the custom category for your{" "}
+                  {!subtask?.taskId ? "task" : "subtask"}.Edit to change name.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -250,6 +363,109 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
         />
         <FormField
           control={form.control}
+          name="shortListedExpiresOn"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expires On</FormLabel>
+
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  handleExpiryChange(value);
+                }}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={`Select when to expire this ${!subtask?.taskId ? "task" : "subtask"}`}
+                    />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="By End Of Today">
+                    By End Of Today
+                  </SelectItem>
+                  <SelectItem value="By Tomorrow">By Tomorrow</SelectItem>
+                  <SelectItem value="In 5 Hours">In 5 hours</SelectItem>
+                  <SelectItem value="Set Custom">Set Custom</SelectItem>
+                  {/* Location where i want selectitem but that item should be input field and it sends vlaue that we input.For your instance this is for custom category. */}
+                </SelectContent>
+              </Select>
+              <FormDescription>This can be changed later.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {isCustomExpiry && (
+          <FormField
+            control={form.control}
+            name="expiresOn"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Expires On(value) </FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP HH:mm") // Display date and time
+                        ) : (
+                          <span>Pick a date and time</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-4" align="start">
+                    <div className="flex items-center space-x-4">
+                      {/* Calendar Component */}
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          if (date) {
+                            // Combine selected date with current time
+                            const dateTime = new Date(
+                              date.setHours(
+                                parseInt(timeValue.split(":")[0] as string, 10),
+                                parseInt(timeValue.split(":")[1] as string, 10),
+                              ),
+                            );
+                            field.onChange(dateTime);
+                          }
+                        }}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0)) || date < new Date("1900-01-01")
+                        }
+                        // initialFocus
+                      />
+                      {/* Time Input Field */}
+                      <input
+                        type="time"
+                        value={timeValue}
+                        onChange={handleTimeChange}
+                        className="rounded border p-1"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>
+                  Your date and time are important for something.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        <FormField
+          control={form.control}
           name="remark"
           render={({ field }) => (
             <FormItem>
@@ -257,11 +473,13 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
               <FormControl>
                 <Input
                   autoComplete="off"
-                  placeholder={`Enter remark for the ${(!subtask?.taskId) ? "task": "subtask"}.`}
+                  placeholder={`Enter remark for the ${!subtask?.taskId ? "task" : "subtask"}.`}
                   {...field}
                 />
               </FormControl>
-              <FormDescription>This is remark for your {(!subtask?.taskId) ? "task": "subtask"}.</FormDescription>
+              <FormDescription>
+                This is remark for your {!subtask?.taskId ? "task" : "subtask"}.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -297,7 +515,9 @@ export function AddNewForm({className, closeFun, subtask}: {className?: string, 
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending}>Submit</Button>
+        <Button type="submit" disabled={isPending}>
+          Submit
+        </Button>
       </form>
     </Form>
   );

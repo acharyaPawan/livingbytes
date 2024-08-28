@@ -147,7 +147,7 @@ export async function createNewTask(values: formdata) {
             priorityLabel: values.priority,
             status: "Not Started",
             viewAs: values.viewAs,
-            expiresOn: getEndOfDay(),
+            expiresOn: values.expiresOn,
             remark: values.remark,
           })
           .returning();
@@ -304,7 +304,7 @@ export async function createNewSubtask(values: formdata, taskId: string) {
             priorityLabel: values.priority,
             status: "Not Started",
             viewAs: values.viewAs,
-            expiresOn: getEndOfDay(),
+            expiresOn: values.expiresOn,
             remark: values.remark,
           })
           .returning();
@@ -420,7 +420,8 @@ import { formSchema } from "@/components/events/AddNewEvent";
 import { ZodError } from "zod";
 import {type InferInsertModel,type InferSelectModel, and, eq, ilike } from "drizzle-orm";
 import type{ formdata } from "@/components/tasks/AddNewForm";
-import type { ExtendedFormValues, TaskType } from "@/types/types";
+import type { ExtendedFormValues, TaskStatus, TaskType } from "@/types/types";
+import { revalidatePath } from "next/cache";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user
@@ -549,5 +550,30 @@ export async function createEventAction(values: formdataEvent) {
       };
     });
     return result
+  }
+}
+
+enum InputType {
+  "task", "subtask"
+}
+
+export async function updateStatus (taskId: string, statusStr: TaskStatus, type: TaskType) {
+  if (type === "tasks") {
+    try {
+      await db.transaction(async (tx) => {
+        await tx.update(tasks).set({
+          status: statusStr
+        })
+      })
+    } catch (e) {
+      return {
+        error: `Error Occurred while updating status : ${e}`
+      }
+      
+    }
+    await revalidatePath("/tasks2")
+    return {
+      success: `Updated ${type} status to ${statusStr}`
+    }
   }
 }

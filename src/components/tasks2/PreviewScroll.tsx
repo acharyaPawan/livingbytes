@@ -3,16 +3,62 @@
 import { resultType } from "@/app/(site)/(routes)/tasks2/db-queries";
 import { ChangeEvent, useEffect, useState } from "react";
 import { Switch } from "../ui/switch";
-import { Label } from "../ui/label";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { Layers, Maximize, Maximize2, Minimize, Radar } from "lucide-react";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import {
+  FilePlus,
+  Layers,
+  Maximize,
+  Maximize2,
+  Minimize,
+  Radar,
+} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 import { DeleteAlertDialog } from "../shared/DeleteAlertDialog";
 import { EditTask } from "../tasks/EditTask";
 import { PriorityLabels } from "@/types/types";
 import { AddNew } from "../tasks/AddNew";
+import { subtasks } from "drizzle/schema";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "@/components/ui/command";
+
+import {
+  Calculator,
+  Calendar,
+  CreditCard,
+  Settings,
+  Smile,
+  User,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { MyTimer, PopOverForUI, ThreeDotsVertical } from "./ui";
+import { Separator } from "../ui/separator";
 
 enum RenderMode {
   Categorical = "categorical",
@@ -94,7 +140,7 @@ export const ScrollPreview = ({ data }: { data: resultType }) => {
     useCollapsedModeData(data);
 
   return (
-    <div className="">
+    <div>
       <ViewSwitch
         collapsed={isCollapsed}
         handleClick={() => setCollapsed(!isCollapsed)}
@@ -224,7 +270,7 @@ export const PreviewItemCollapsed = ({
   // children: ReactNode;
 }) => {
   return (
-    <div className="flex w-full flex-col gap-1">
+    <div className="flex w-full flex-col gap-2">
       {tasks.map((t) => (
         <div key={t.id}>
           {t.viewAs === "Status" && (
@@ -241,14 +287,23 @@ export const PreviewItemCollapsed = ({
   );
 };
 
+const useTaskDetailMinMaxView = (isWideScreen: boolean) => {
+  const [isMaxTaskDetails, setMaxTaskDetails] = useState<boolean>(false);
+  const [isMaxSubtaskDetails, setMaxSubtaskDetails] = useState<boolean>(true);
 
-const useTaskDetailMinMaxView = () => {
-  const [isMax, setMax] = useState<boolean>(false)
   return {
-    isMax,
-    setMax
-  }
-}
+    viewControl: {
+      tasks: {
+        isMax: isMaxTaskDetails,
+        setMax: setMaxTaskDetails,
+      },
+      subtasks: {
+        isMax: isMaxSubtaskDetails,
+        setMax: setMaxSubtaskDetails,
+      },
+    },
+  };
+};
 
 const StatusTaskRender = ({
   t,
@@ -259,19 +314,51 @@ const StatusTaskRender = ({
   handleExtendTaskClick: (newTask: string) => void;
   isExpandedTask: (task: string) => boolean;
 }) => {
-  const {isMax, setMax} = useTaskDetailMinMaxView()
   const isWideScreen = useMediaQuery("(min-width: 900px)");
+  const { viewControl } = useTaskDetailMinMaxView(isWideScreen);
+  const trackers = t.trackersTasksMap.map((x) => x.tracker);
+
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-xl border border-transparent bg-gradient-to-r from-indigo-500 to-purple-500 p-2 pt-0 font-semibold leading-10 tracking-normal text-slate-100 transition",
+        "relative flex flex-col rounded-xl border border-transparent bg-accent  p-2 pt-0 font-semibold leading-10 tracking-normal  transition",
         {
-          "max-h-80 min-h-40 overflow-y-scroll relative": isExpandedTask(t.id),
+          "relative max-h-80 min-h-40 overflow-y-scroll": isExpandedTask(t.id),
         },
       )}
     >
-      <div className="flex flex-row items-start justify-between">
-        <div className="flex flex-1 flex-wrap justify-between gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="absolute right-2 top-2 z-50 max-w-fit cursor-pointer">
+            <ThreeDotsVertical />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent>
+          <div>
+            <Command>
+              <CommandList>
+                <CommandGroup>
+                  <CommandItem>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <span>View Details</span>
+                      </PopoverTrigger>
+                      <PopoverContent>
+                        <TaskOrSubtaskProperties t={t} />
+                      </PopoverContent>
+                    </Popover>
+                  </CommandItem>
+                  <CommandItem>
+                    <span>Lock Task</span>
+                  </CommandItem>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>
+        </PopoverContent>
+      </Popover>
+      <div className="relative mr-6 flex flex-row items-start justify-between">
+        <div className=" flex flex-1 flex-wrap justify-between gap-2">
           <h1
             className={cn(
               "line-clamp-2 min-w-48 break-words text-xl font-bold capitalize",
@@ -282,22 +369,30 @@ const StatusTaskRender = ({
           >
             {t.title}
           </h1>
-          <div>
+          <div className="flex flex-row gap-2">
             {!isWideScreen && (
-              <span className="capitalize leading-4 text-slate-300">
+              <span className="capitalize ">
                 in {t.category}
               </span>
             )}
             {!isWideScreen && (
-              <span className="capitalize leading-4 text-slate-300"> {t.status}</span>
+              <span className="capitalize ">
+                {t.status}
+              </span>
+            )}
+            {!isWideScreen && t.priorityLabel && (
+              <span className="capitalize  italic">
+                {t.priorityLabel}
+              </span>
             )}
           </div>
         </div>
         {isWideScreen && (
           <div className="flex gap-4">
-            <span className="capitalize text-slate-300">in {t.category}</span>
-            <span>locked: {t.locked?.valueOf()}</span>
-            <span className="capitalize text-slate-300"> {t.status}</span>
+            {(t.status !== "Expired") && <MyTimer expiryTimestamp={t.expiresOn} tid={t.id} type={"tasks"} currStatus={t.status} />}
+            <span className="capitalize ">in {t.category}</span>
+            <span>locked: {t.locked?.valueOf().toString()}</span>
+            <span className="capitalize"> {t.status}</span>
           </div>
         )}
       </div>
@@ -307,71 +402,100 @@ const StatusTaskRender = ({
         </p>
       </div>
       {!isWideScreen && !isExpandedTask(t.id) && (
-          <div className="flex flex-col pl-4">
-            <div>
-              <p className="truncate text-wrap pl-2 text-xs tracking-widest">
-                contains {t.subtasks.length} subtasks
-              </p>
-            </div>
-            <div>
-              <p className="truncate text-wrap pl-2 text-xs tracking-widest">
-                contains {t.trackersTasksMap.length} trackers
-              </p>
-            </div>
+        <div className="flex flex-col pl-4">
+          <div>
+            <p className="truncate text-wrap pl-2 text-xs tracking-widest">
+              contains {t.subtasks.length} subtasks
+            </p>
           </div>
+          <div>
+            <p className="truncate text-wrap pl-2 text-xs tracking-widest">
+              contains {t.trackersTasksMap.length} trackers
+            </p>
+          </div>
+        </div>
       )}
       {isWideScreen && !isExpandedTask(t.id) && (
-          <div className="flex flex-row flex-wrap items-baseline justify-start gap-4 pl-2 align-middle leading-6">
-            {isWideScreen && (
-              <div className="flex flex-row items-baseline justify-center gap-0.5 align-middle">
-                <div className="inline-flex aspect-auto h-[5px] w-[5px] rounded bg-slate-300"></div>
-                <span> expires on:{t.expiresOn?.toLocaleDateString()}</span>
-              </div>
-            )}
-            {/* <span>contains {t.subtasks.length} subtasks</span> */}
-            <span className=" flex flex-row gap-2">
-              {" "}
-              {t.subtasks.length} <Layers />
-            </span>
-            <span className=" flex flex-row gap-2">
-              {" "}
-              {t.trackersTasksMap.length} <Radar />
-            </span>
-            <span className=" flex flex-row gap-2">
-              {" "}
-              <button>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  className="lucide lucide-ellipsis-vertical"
-                >
-                  <circle cx="12" cy="12" r="1" />
-                  <circle cx="12" cy="5" r="1" />
-                  <circle cx="12" cy="19" r="1" />
-                </svg>
-              </button>
-            </span>
-          </div>
+        <div className="flex flex-row flex-wrap items-baseline justify-start gap-4 pl-2 align-middle leading-6">
+          {isWideScreen && (
+            <div className="flex flex-row items-baseline justify-center gap-0.5 align-middle">
+              <div className="inline-flex aspect-auto h-[5px] w-[5px] rounded"></div>
+              <span> expires on:{t.expiresOn?.toLocaleDateString()}</span>
+            </div>
+          )}
+          {/* <span>contains {t.subtasks.length} subtasks</span> */}
+          <span className=" flex flex-row gap-2">
+            {" "}
+            {t.subtasks.length} <Layers />
+          </span>
+          <span className=" flex flex-row gap-2">
+            {" "}
+            {t.trackersTasksMap.length} <Radar />
+          </span>
+          <span className=" flex flex-row gap-2">
+            {" "}
+            <button>
+              <ThreeDotsVertical />
+            </button>
+          </span>
+        </div>
       )}
-      
 
       {isExpandedTask(t.id) && (
-        <div className="ml-2 pl-1 opacity-90 border-slate-400 border my-1 text-sm rounded-md">
+        <div className="my-1 pl-2 text-sm">
           <div className="flex flex-row justify-between">
-          <h2>View Task Details</h2>
-          {isMax ? <Minimize onClick={() => setMax(!isMax)} /> : <Maximize onClick={() => setMax(!isMax)} /> }
+            <h2 className="text-xl tracking-tighter font-poppins">Subtasks</h2>
+            <div className="flex align-baseline">
+              <FilePlus />
+              {viewControl.subtasks.isMax ? (
+                <Minimize
+                  onClick={() =>
+                    viewControl.subtasks.setMax(!viewControl.subtasks.isMax)
+                  }
+                />
+              ) : (
+                <Maximize
+                  onClick={() =>
+                    viewControl.subtasks.setMax(!viewControl.subtasks.isMax)
+                  }
+                />
+              )}
+            </div>
           </div>
-          {isMax && <TaskProperties t={t}/>}
+          {viewControl.subtasks.isMax && (
+            <div className="pl-4">
+              <div>
+                {!isWideScreen &&
+                  t.subtasks.map((x) => (
+                    <>
+                    <div className="flex gap-4 leading-8">
+                      <div className="bold tracking-widest">{x.title} </div>
+                      <span className="uppercase opacity-70">{x.status}</span>
+                      {x.priorityLabel && <span className="italic opacity-70">{x.priorityLabel}</span>}
+                      <OptionsPopover type="Subtask" t={x} />
+                    </div>
+                    <Separator className="mb-1" />
+                    </>
+                  ))}
+                {isWideScreen && <PreviewSubtasks st={t.subtasks} />}
+              </div>
+              <AddNew subtask={{ taskId: t.id }} />
+              {/* <OptionsPopverView type={"Subtask"} /> */}
+            </div>
+          )}
         </div>
       )}
       {isExpandedTask(t.id) && (
+        <div>
+          <div className="my-1 pl-2 text-sm">
+            <div className="text-xl tracking-tighter font-poppins">Trackers</div>
+            {trackers?.length === 0 && "No trackers"}
+            {trackers?.length !== 0 &&
+              trackers.map((x) => <div>{x?.title}</div>)}
+          </div>
+        </div>
+      )}
+      {/* {isExpandedTask(t.id) && (
         <div className="pl-1">
           <h2>Subtasks:</h2>
           <div>
@@ -379,19 +503,30 @@ const StatusTaskRender = ({
           </div>
           <AddNew subtask={{taskId: t.id}} />
         </div>
+      )} */}
+      {isExpandedTask(t.id) && (
+        <div className="h-8 w-8 bg-slate-300 text-gray-800 opacity-70 dark:bg-neutral-800 dark:text-neutral-500">
+          <EditTask
+            data={{
+              id: t.id,
+              title: t.title,
+              viewAs: t.viewAs,
+              description: t.description,
+              priorityLabel: t.priorityLabel,
+              remark: t.remark,
+            }}
+            categoryName={t.id}
+          />
+        </div>
       )}
-      {isExpandedTask(t.id) && <div className="h-8 w-8 text-gray-800 dark:text-neutral-500 dark:bg-neutral-800 opacity-70 bg-slate-300"><EditTask data={{
-        id: t.id,
-        title: t.title,
-        viewAs: t.viewAs,
-        description: t.description,
-        priorityLabel: t.priorityLabel,
-        remark: t.remark
-      }} categoryName={t.id}/>
-      </div>}
-      {<button className="absolute right-2 bottom-2 z-99999999999" onClick={() => handleExtendTaskClick(t.id)}>
-        <Maximize2 />
-      </button>}
+      {
+        <button
+          className="z-99999999999 absolute bottom-2 right-2"
+          onClick={() => handleExtendTaskClick(t.id)}
+        >
+          <Maximize2 />
+        </button>
+      }
 
       {/* <button>Expand</button> */}
       {/* <Separator className="bg-sky-900" /> */}
@@ -425,10 +560,7 @@ const RenderCheckBox = ({ t }: { t: collapsedModeData[0] }) => {
   );
 };
 
-
-
-
-const TaskProperties = ({t}: {t: resultType[0]['tasks'][0]}) => {
+const TaskProperties = ({ t }: { t: resultType[0]["tasks"][0] }) => {
   return (
     <Table className="pb-0">
       <TableCaption className="text-white">Properties of Task</TableCaption>
@@ -442,15 +574,18 @@ const TaskProperties = ({t}: {t: resultType[0]['tasks'][0]}) => {
         <TableRow>
           <TableCell>Title</TableCell>
           <TableCell>{t.title}</TableCell>
-          </TableRow>
-          <TableRow>
+        </TableRow>
+        <TableRow>
           <TableCell>Description</TableCell>
-          
+
           <TableCell>{t.description}</TableCell>
-          </TableRow>
-          <TableRow>
+        </TableRow>
+        <TableRow>
           <TableCell>Created On:</TableCell>
-          <TableCell>{t.createdOn?.toLocaleDateString()} {t.createdOn?.toLocaleTimeString()}</TableCell>
+          <TableCell>
+            {t.createdOn?.toLocaleDateString()}{" "}
+            {t.createdOn?.toLocaleTimeString()}
+          </TableCell>
         </TableRow>
         <TableRow>
           <TableCell>Locked</TableCell>
@@ -468,11 +603,176 @@ const TaskProperties = ({t}: {t: resultType[0]['tasks'][0]}) => {
           <TableCell>Priority Label</TableCell>
           <TableCell>{t.priorityLabel ?? "Not Given"}</TableCell>
         </TableRow>
-        {t.remark && (<TableRow>
-          <TableCell>Remark</TableCell>
-          <TableCell>{t?.remark}</TableCell>
-        </TableRow>)}
+        {t.remark && (
+          <TableRow>
+            <TableCell>Remark</TableCell>
+            <TableCell>{t?.remark}</TableCell>
+          </TableRow>
+        )}
       </TableBody>
     </Table>
-  )
+  );
+};
+
+interface SubtaskPopverProps {
+  type: "Task" | "Subtask";
+  t: resultType[0]["tasks"][0] | resultType[0]["tasks"][0]["subtasks"][0];
 }
+
+const OptionsPopverView = ({ type, t }: SubtaskPopverProps) => {
+  return (
+    <Command className="rounded-lg bg-indigo-400 text-white shadow-md md:min-w-[450px]">
+      <CommandInput placeholder="Type a command or search..." />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Options">
+          <CommandItem>
+            <User className="mr-2 h-4 w-4" />
+            <DetailsPopover type={type} t={t} />
+            <CommandShortcut>⌘P</CommandShortcut>
+          </CommandItem>
+          <CommandItem>
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Lock {type === "Task" ? "task" : "subtask"}</span>
+            <CommandShortcut>⌘B</CommandShortcut>
+          </CommandItem>
+          <CommandGroup heading={"Actions"}>
+            <CommandItem>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>
+                Mark it Completed {type === "Task" ? "task" : "subtask"}
+              </span>
+              <CommandShortcut>⌘B</CommandShortcut>
+            </CommandItem>
+          </CommandGroup>
+          {/* <CommandItem>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+            <CommandShortcut>⌘S</CommandShortcut>
+          </CommandItem> */}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+};
+
+const OptionsPopover = ({ type, t }: SubtaskPopverProps) => {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="">
+          <ThreeDotsVertical />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full bg-indigo-500" side={"top"}>
+        <OptionsPopverView type={type} t={t} />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const DetailsPopover = ({ type, t }: SubtaskPopverProps) => {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button>View Details</button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" side={"right"}>
+        {<TaskOrSubtaskProperties t={t} />}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+type TaskOrSubtask =
+  | resultType[0]["tasks"][0]
+  | resultType[0]["tasks"][0]["subtasks"][0];
+
+const TaskOrSubtaskProperties = ({ t }: { t: TaskOrSubtask }) => {
+  return (
+    <div>
+    <Table className="pb-0">
+      <TableCaption className="">Properties of Task</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="">Property</TableHead>
+          <TableHead className="">Value</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody className="">
+        <TableRow>
+          <TableCell>Title</TableCell>
+          <TableCell>{t.title}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Description</TableCell>
+
+          <TableCell>{t.description}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Created On:</TableCell>
+          <TableCell>
+            {t.createdOn?.toLocaleDateString()}{" "}
+            {t.createdOn?.toLocaleTimeString()}
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Locked</TableCell>
+          <TableCell>{t.locked?.valueOf().toString()}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Status</TableCell>
+          <TableCell>{t.status}</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Expires On</TableCell>
+          <TableCell>
+            {t.expiresOn?.toLocaleString() ?? "Not Specified"}
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Priority Label</TableCell>
+          <TableCell>{t.priorityLabel ?? "Not Given"}</TableCell>
+        </TableRow>
+        {t.remark && (
+          <TableRow>
+            <TableCell>Remark</TableCell>
+            <TableCell>{t?.remark}</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+    </div>
+  );
+};
+
+export const PreviewSubtasks = ({
+  st,
+}: {
+  st: resultType[0]["tasks"][0]["subtasks"];
+}) => {
+  return (
+    <div className="rounded-md border border-slate-500 px-1">
+      {st.map((st) => {
+        return (
+          <div className="div flex flex-row justify-between align-baseline" key={st.id}>
+            <div className="flex gap-2 flex-wrap break-words align-baseline">
+              <h2 className="text-md tracking-widest bold">{st.title}</h2>
+              {st.description && <span className="opacity-80">{st.description}</span>}
+              <span className="italic opacity-70">{st.remark}</span>
+              {st.priorityLabel && <span className="opacity-90 font-serif">{st.priorityLabel}</span>}
+              
+            </div>
+            <div className="flex gap-2 opacity-70 flex-wrap break-words">
+              <span>Category: {st?.category.title}</span>
+              <span>Locked:{st.locked?.valueOf().toString()}</span>
+              <span>{st.priorityLabel}</span>
+              <span className="bold font-mono opacity-95 text-primary">Status: {st.status}</span>
+              <OptionsPopover type="Subtask" t={st} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};

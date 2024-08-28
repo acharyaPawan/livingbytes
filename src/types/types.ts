@@ -1,11 +1,12 @@
 import { formdata } from "@/components/tasks/AddNewForm";
 import { formdata as formdataFromEdit } from "@/components/tasks/EditTaskForm";
 
-export type TaskStatus = "Not Started" | "In Progress" | "Finished" | "Paused" | "Scheduled";
+export type TaskStatus = "Not Started" | "In Progress" | "Finished" | "Paused" | "Scheduled" | "Expired";
 export type PriorityLabels = "High" | "Less" | "Moderate" | "Very High" | "Very Less";
 export type TrackerFrequency = "Daily" | "Weekly" | "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
 export type ViewAsType = "Checkbox" | "Status";
 export type TaskType = "tasks" | "subtasks"
+
 
 //Priority number give it values multiple of 10 within reange of 100.
 
