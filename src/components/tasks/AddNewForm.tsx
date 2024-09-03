@@ -39,6 +39,8 @@ import { priorityLabels } from "@/server/db/schema";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
+import { Switch } from "../ui/switch";
+import { revalidateTagsAction } from "@/actions/utils";
 
 const PRIORITYENUM = [
   "High",
@@ -90,16 +92,17 @@ const formSchema = z.object({
     required_error: "Expiry date must be given.",
   }),
   shortListedExpiresOn: z.enum(EXPIRYENUM).optional(),
+  scheduled: z.boolean().default(false),
+  scheduledOn: z.date().optional(),
   // customCategory: z.string().optional(),
 });
 
 export type formdata = z.infer<typeof formSchema>;
 
-
 // Function to format the time as HH:MM
 const formatTime = (date: Date) => {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 };
 
@@ -167,10 +170,12 @@ export function AddNewForm({
       title: "",
       description: "",
       remark: "",
+      scheduled: false,
       priority: "Moderate",
       viewAs: "Checkbox",
       category: "Not Specified",
       expiresOn: new Date(new Date().setHours(23, 59, 59, 999)),
+      scheduledOn: new Date(new Date().setHours(25, 0, 0, 0))
     },
   });
 
@@ -181,11 +186,36 @@ export function AddNewForm({
     startTransition(async () => {
       if (!subtask?.taskId) {
         const response = await createNewTask(values);
+        if (values.scheduled && values.scheduledOn) {
+          await revalidateTagsAction(['scheduled-task-today', 'all-tasks'])
+          console.log("send req to revalidate scheduled and all tasks")
+        } else {
+          console.log("send req to all tasks")
+        await revalidateTagsAction(['all-tasks'])
+        }
+
+        //error management to bo done.
       } else {
         const response = await createNewSubtask(values, subtask.taskId);
+        if (values.scheduled && values.scheduledOn) {
+          if (values.scheduledOn <= values.expiresOn) {
+            form.setError("scheduled", {message: "scheduled datetime is earlier than expiresOn"})
+          }
+          await revalidateTagsAction(['scheduled-subtask-today', 'all-tasks'])
+          console.log("send req to revalidate scheduled and all tasks")
+
+        } else {
+          if (new Date() <= values.expiresOn) {
+            form.setError("scheduled", {message: "expiry datetime is earlier than present datetime."})
+          }
+          console.log("send req to revalidate all tasks")
+
+        await revalidateTagsAction([ 'all-tasks'])
+        }
       }
       closeFun();
-      router.refresh();
+      // await revalidatePathAction(["tasks2"])
+      // router.refresh();
     });
     // await revalidatePath("/tak")
 
@@ -201,10 +231,16 @@ export function AddNewForm({
   }
 
   const [timeValue, setTimeValue] = useState<string>("00:00");
+  const [scheduledTimeValue, setScheduledTimeValue] = useState<string>("00:00");
 
   useEffect(() => {
     const now = new Date(); // Get current date and time
     setTimeValue(formatTime(now)); // Set state with current time
+  }, []);
+
+  useEffect(() => {
+    const now = new Date(); // Get current date and time
+    setScheduledTimeValue(formatTime(now)); // Set state with current time
   }, []);
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -224,6 +260,28 @@ export function AddNewForm({
 
       // Update the form's "expiresOn" value with the new date and time
       form.setValue("expiresOn", updatedDate);
+    }
+  };
+
+  const handleScheduledTimeChange: React.ChangeEventHandler<
+    HTMLInputElement
+  > = (e) => {
+    setScheduledTimeValue(e.target.value);
+
+    // Get the current "expiresOn" value
+    const currentExpiresOn = form.getValues("scheduledOn");
+
+    if (currentExpiresOn) {
+      const [hours, minutes] = e.target.value.split(":").map(Number);
+
+      // Create a new Date object from the current "expiresOn" value
+      const updatedDate = new Date(currentExpiresOn);
+
+      // Set the new time on the Date object
+      updatedDate.setHours(hours ?? 10, minutes, 0, 0);
+
+      // Update the form's "expiresOn" value with the new date and time
+      form.setValue("scheduledOn", updatedDate);
     }
   };
   return (
@@ -442,7 +500,8 @@ export function AddNewForm({
                           }
                         }}
                         disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0)) || date < new Date("1900-01-01")
+                          date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                          date < new Date("1900-01-01")
                         }
                         // initialFocus
                       />
@@ -451,6 +510,94 @@ export function AddNewForm({
                         type="time"
                         value={timeValue}
                         onChange={handleTimeChange}
+                        className="rounded border p-1"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>
+                  Your date and time are important for something.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        <FormField
+          control={form.control}
+          name="scheduled"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Schedule Task</FormLabel>
+                <FormDescription>
+                  Schedule task at particular date and time.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {form.getValues("scheduled") === true && (
+          <FormField
+            control={form.control}
+            name="scheduledOn"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Expires On(value) </FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP HH:mm") // Display date and time
+                        ) : (
+                          <span>Pick a date and time</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-4" align="start">
+                    <div className="flex items-center space-x-4">
+                      {/* Calendar Component */}
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          if (date) {
+                            // Combine selected date with current time
+                            const dateTime = new Date(
+                              date.setHours(
+                                parseInt(timeValue.split(":")[0] as string, 10),
+                                parseInt(timeValue.split(":")[1] as string, 10),
+                              ),
+                            );
+                            field.onChange(dateTime);
+                          }
+                        }}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                          date < new Date("1900-01-01")
+                        }
+                        // initialFocus
+                      />
+                      {/* Time Input Field */}
+                      <input
+                        type="time"
+                        value={scheduledTimeValue}
+                        onChange={handleScheduledTimeChange}
                         className="rounded border p-1"
                       />
                     </div>

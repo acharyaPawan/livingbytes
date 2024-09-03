@@ -26,7 +26,7 @@ import {
 import { AddNewForm } from "./AddNewForm"
 import { ScrollArea } from "../ui/scroll-area"
 import { EditTaskForm } from "./EditTaskForm"
-import { PriorityLabels, Task, ViewAsType } from "@/types/types"
+import { PriorityLabels, Task, TaskStatus, ViewAsType } from "@/types/types"
 
 interface EditTaskProps {
   categoryName: string;
@@ -36,7 +36,9 @@ interface EditTaskProps {
     description?: string | null,
     remark?: string | null,
     priorityLabel?: PriorityLabels | null,
-    viewAs: ViewAsType
+    viewAs: ViewAsType,
+    status: TaskStatus,
+    locked: boolean,
   }
 }
 

@@ -12,7 +12,7 @@ const data = await db.query.categories.findMany({
     tasks: {
       columns: {
         id: true,
-        createdOn: true,
+        effectiveOn: true,
         expiresOn: true,
         title: true,
         description: true,
@@ -30,7 +30,7 @@ const data = await db.query.categories.findMany({
             description: true,
             remark: true,
             priorityLabel: true,
-            createdOn: true,
+            effectiveOn: true,
             expiresOn: true,
             categoryId: true,
             locked: true,
@@ -61,7 +61,7 @@ const data = await db.query.categories.findMany({
       // where: and(isNull(tasks.completedOn), lt(tasks.expiresOn, new Date())),
       orderBy: (tasks, { desc, asc }) => [
         desc(tasks.priority),
-        asc(tasks.createdOn),
+        asc(tasks.effectiveOn),
       ],
     },
   },

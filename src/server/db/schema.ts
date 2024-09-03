@@ -23,12 +23,12 @@ export const priorityLabels = pgEnum("PriorityLabels", [
   "High",
 ]);
 export const status = pgEnum("Status", [
-  "Scheduled",
   "Paused",
   "Finished",
   "In Progress",
   "Not Started",
   "Expired",
+  "Scheduled"
 ]);
 export const trackerFrequency = pgEnum("TrackerFrequency", [
   "Yearly",
@@ -43,6 +43,7 @@ export const trackerStatus = pgEnum("TrackerStatus", [
   "In Progress",
   "Not Started Yet",
   "Finished",
+  "Idle"
 ]);
 export const eventType = pgEnum("eventType", ["Range", "Single"]);
 
@@ -110,15 +111,16 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   priority: numeric("priority").notNull(),
   priorityLabel: priorityLabels("priority_label").default("Moderate"),
-  status: status("status").notNull(),
-  viewAs: viewAs("view_as").notNull(),
+  status: status("status").notNull().default("Not Started"),
+  viewAs: viewAs("view_as").notNull().default("Status"),
   specialLabels: text("special_labels").array(),
   remark: text("remark"),
-  createdOn: timestamp("created_on", {
+  checkpoint: integer("checkpoint").notNull().default(1),
+  effectiveOn: timestamp("effective_on", {
     precision: 3,
     withTimezone: true,
     mode: "date",
-  }).defaultNow(),
+  }).defaultNow().notNull(),
   expiresOn: timestamp("expires_on", {
     precision: 3,
     withTimezone: true,
@@ -129,6 +131,7 @@ export const tasks = pgTable("tasks", {
     withTimezone: true,
     mode: "date",
   }),
+  // scheduled: boolean("scheduled").default(false),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
 });
@@ -150,8 +153,8 @@ export const trackers = pgTable("trackers", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   // taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  frequency: trackerFrequency("frequency").notNull(),
-  tracked: boolean("tracked").default(false),
+  frequency: trackerFrequency("frequency").notNull().default("Daily"),
+  // tracked: boolean("tracked").default(false), edited
   createdOn: timestamp("created_on", {
     precision: 3,
     withTimezone: true,
@@ -160,8 +163,9 @@ export const trackers = pgTable("trackers", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  status: trackerStatus("status").notNull(),
-  archived: boolean("archived").default(false)
+  status: trackerStatus("status").notNull().default('In Progress'),
+  archived: boolean("archived").default(false),
+  //todo : add trakingTime
 });
 
 export const trackerRelation = relations(trackers, ({ many }) => ({
@@ -200,15 +204,16 @@ export const subtasks = pgTable("subtasks", {
   description: text("description"),
   priority: numeric("priority").notNull(),
   priorityLabel: priorityLabels("priority_label"),
-  status: status("status").notNull(),
-  viewAs: viewAs("view_as").notNull(),
+  status: status("status").notNull().default("Not Started"),
+  viewAs: viewAs("view_as").notNull().default("Status"),
   specialLabels: text("special_labels").array(),
   remark: text("remark"),
-  createdOn: timestamp("created_on", {
+  checkpoint: integer("checkpoint").notNull().default(1),
+  effectiveOn: timestamp("effective_on", {
     precision: 3,
     withTimezone: true,
     mode: "date",
-  }).defaultNow(),
+  }).defaultNow().notNull(),
   expiresOn: timestamp("expires_on", {
     precision: 3,
     withTimezone: true,
@@ -219,6 +224,7 @@ export const subtasks = pgTable("subtasks", {
     withTimezone: true,
     mode: "date",
   }),
+  // scheduled: boolean("scheduled").default(false),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
 });

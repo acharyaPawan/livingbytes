@@ -102,7 +102,7 @@ const useExpandedTasks = () => {
 };
 
 const useCollapsedModeData = (data: resultType) => {
-  const [isCollapsed, setCollapsed] = useState<boolean>(false);
+  const [isCollapsed, setCollapsed] = useState<boolean>(true);
   const [collapsedModeData, setCollapsedModeData] = useState<collapsedModeData>(
     [],
   );
@@ -238,7 +238,7 @@ export const PreviewItem = ({
           <div className="flex flex-row items-baseline justify-start gap-4 align-middle leading-6">
             <div className="flex flex-row items-baseline justify-center gap-0.5 align-middle">
               <div className="inline-flex aspect-auto h-[5px] w-[5px] rounded bg-slate-300"></div>
-              <span>expires on:{t.expiresOn?.toLocaleDateString()}</span>
+              <span>expires on:{(new Date(t.expiresOn)).toLocaleDateString()}</span>
             </div>
             <span>contains {t.subtasks.length} subtasks</span>
             <span>contains {t.trackersTasksMap.length} trackers.</span>
@@ -389,7 +389,9 @@ const StatusTaskRender = ({
         </div>
         {isWideScreen && (
           <div className="flex gap-4">
-            {(t.status !== "Expired") && <MyTimer expiryTimestamp={t.expiresOn} tid={t.id} type={"tasks"} currStatus={t.status} />}
+            {(["In Progress", "Paused"].includes(t.status)) && <MyTimer expiryTimestamp={new Date(t.expiresOn)} tid={t.id} type={"tasks"} currStatus={t.status} />}
+            {(["Scheduled"].includes(t.status)) && <MyTimer expiryTimestamp={new Date(t.effectiveOn)} tid={t.id} type={"tasks"} currStatus={t.status} effectiveTimestamp={new Date(t.effectiveOn)} />}
+            
             <span className="capitalize ">in {t.category}</span>
             <span>locked: {t.locked?.valueOf().toString()}</span>
             <span className="capitalize"> {t.status}</span>
@@ -420,7 +422,7 @@ const StatusTaskRender = ({
           {isWideScreen && (
             <div className="flex flex-row items-baseline justify-center gap-0.5 align-middle">
               <div className="inline-flex aspect-auto h-[5px] w-[5px] rounded"></div>
-              <span> expires on:{t.expiresOn?.toLocaleDateString()}</span>
+              <span> expires on:{(new Date(t.expiresOn)).toLocaleDateString()}</span>
             </div>
           )}
           {/* <span>contains {t.subtasks.length} subtasks</span> */}
@@ -514,8 +516,10 @@ const StatusTaskRender = ({
               description: t.description,
               priorityLabel: t.priorityLabel,
               remark: t.remark,
+              status: t.status,
+              locked: t?.locked ?? false,
             }}
-            categoryName={t.id}
+            categoryName={t.category}
           />
         </div>
       )}
@@ -583,8 +587,8 @@ const TaskProperties = ({ t }: { t: resultType[0]["tasks"][0] }) => {
         <TableRow>
           <TableCell>Created On:</TableCell>
           <TableCell>
-            {t.createdOn?.toLocaleDateString()}{" "}
-            {t.createdOn?.toLocaleTimeString()}
+            {t.effectiveOn?.toLocaleDateString()}{" "}
+            {t.effectiveOn?.toLocaleTimeString()}
           </TableCell>
         </TableRow>
         <TableRow>
@@ -710,10 +714,10 @@ const TaskOrSubtaskProperties = ({ t }: { t: TaskOrSubtask }) => {
           <TableCell>{t.description}</TableCell>
         </TableRow>
         <TableRow>
-          <TableCell>Created On:</TableCell>
+          <TableCell>Effective(Created generally but scheduled date for scheduled ones.) On:</TableCell>
           <TableCell>
-            {t.createdOn?.toLocaleDateString()}{" "}
-            {t.createdOn?.toLocaleTimeString()}
+            {(new Date(t?.effectiveOn))?.toLocaleDateString() ?? "NG"}{" "}
+            {(new Date(t?.effectiveOn))?.toLocaleTimeString() ?? "NG"}
           </TableCell>
         </TableRow>
         <TableRow>
@@ -726,9 +730,13 @@ const TaskOrSubtaskProperties = ({ t }: { t: TaskOrSubtask }) => {
         </TableRow>
         <TableRow>
           <TableCell>Expires On</TableCell>
-          <TableCell>
-            {t.expiresOn?.toLocaleString() ?? "Not Specified"}
-          </TableCell>
+          {!!t.expiresOn && <TableCell>
+            {(new Date(t?.expiresOn))?.toLocaleDateString() ?? "NG"}{" "}
+            {(new Date(t?.expiresOn))?.toLocaleTimeString() ?? "NG"}
+          </TableCell>}
+          {!!!t.expiresOn && <TableCell>
+            "NG"
+          </TableCell>}
         </TableRow>
         <TableRow>
           <TableCell>Priority Label</TableCell>

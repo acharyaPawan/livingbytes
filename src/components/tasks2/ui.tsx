@@ -63,7 +63,7 @@ import { useTimer } from 'react-timer-hook';
 import { updateStatus } from "@/app/actions"
 import { TaskStatus, TaskType } from "@/types/types"
 
-export function MyTimer({ expiryTimestamp, tid, type, currStatus }: {expiryTimestamp: Date, tid: string, type: TaskType, currStatus: TaskStatus}) {
+export function MyTimer({ expiryTimestamp, tid, type, effectiveTimestamp, currStatus }: {effectiveTimestamp?: Date, expiryTimestamp: Date, tid: string, type: TaskType, currStatus: TaskStatus}) {
   const [isPending, startTransition] = useTransition()
   const {
     totalSeconds,
@@ -76,10 +76,16 @@ export function MyTimer({ expiryTimestamp, tid, type, currStatus }: {expiryTimes
     pause,
     resume,
     restart,
-  } = useTimer({ expiryTimestamp, onExpire: () => console.warn('onExpire called') });
+  } = useTimer({ expiryTimestamp, onExpire: () => console.warn('onExpire called'), autoStart: true });
+
+
+  // useEffect(() => {
+  //   // const time = new Date()
+  //   restart(expiryTimestamp)
+  // }, [])
 
   useEffect(() => {
-    if (currStatus !== "Expired" && totalSeconds <= 0) {
+    if (currStatus === "In Progress" && (totalSeconds <= 0)) {
       startTransition(async () => {
         const res = await updateStatus(tid, "Expired", type);
         if (res?.success) {
@@ -90,7 +96,28 @@ export function MyTimer({ expiryTimestamp, tid, type, currStatus }: {expiryTimes
         }
       });
     }
-  }, [totalSeconds, startTransition, tid]);
+    if (currStatus === "Scheduled" && (totalSeconds <= 0)) {
+      startTransition(async () => {
+        const res = await updateStatus(tid, "In Progress", type);
+        if (res?.success) {
+          console.log("Status successfully updated.", res.success);
+        }
+        if (res?.error) {
+          console.log("Status not updated", res.error);
+        }
+      });
+    }
+    if (currStatus === "Paused") {
+      pause()
+    }
+    if (currStatus === "Scheduled" && effectiveTimestamp) {
+      restart(effectiveTimestamp)
+    }
+  }, [totalSeconds, startTransition, tid, currStatus, expiryTimestamp, type, ]);
+
+  const renderTotalSeconds = () => {
+    return (<div className="text-sm">{totalSeconds}</div>)
+  }
 
   // console.log("Seconds remaining: ", totalSeconds)
   const renderTime = () => {
@@ -122,9 +149,11 @@ export function MyTimer({ expiryTimestamp, tid, type, currStatus }: {expiryTimes
   };
 
   return (
-    <span className="flex align-baseline gap-1">
-      {renderTime()}<span> remaining</span>
-    </span>
+    <>
+    {<span className="flex align-baseline gap-1">
+      {renderTime()}<span> remaining</span>{currStatus === "Scheduled" && <span> to start</span>}
+    </span>}
+    </>
   );
 }
 

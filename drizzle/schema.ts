@@ -3,7 +3,7 @@ import { pgTable, unique, pgEnum, text, timestamp, foreignKey, uuid, numeric, bo
 import { sql } from "drizzle-orm"
 export const role = pgEnum("role", ['OWNER', 'USER'])
 export const priorityLabels = pgEnum("PriorityLabels", ['Very Less', 'Very High', 'Moderate', 'Less', 'High'])
-export const status = pgEnum("Status", ['Scheduled', 'Paused', 'Finished', 'In Progress', 'Not Started'])
+export const status = pgEnum("Status", ['Scheduled', 'Paused', 'Finished', 'In Progress', 'Not Started', 'Expired'])
 export const trackerFrequency = pgEnum("TrackerFrequency", ['Yearly', 'HalfYearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily'])
 export const viewAs = pgEnum("ViewAs", ['Status', 'Checkbox'])
 export const trackerStatus = pgEnum("TrackerStatus", ['In Progress', 'Not Started Yet', 'Finished'])
@@ -49,7 +49,7 @@ export const tasks = pgTable("tasks", {
 	description: text("description"),
 	priority: numeric("priority").notNull(),
 	priorityLabel: priorityLabels("priority_label").default(priorityLabels.enumValues[2]),
-	status: status("status").notNull(),
+	status: status("status").notNull().default("Not Started"),
 	viewAs: viewAs("view_as").notNull(),
 	specialLabels: text("special_labels").array(),
 	remark: text("remark"),
@@ -78,7 +78,7 @@ export const subtasks = pgTable("subtasks", {
 	description: text("description"),
 	priority: numeric("priority").notNull(),
 	priorityLabel: priorityLabels("priority_label").default("Moderate"),
-	status: status("status").notNull(),
+	status: status("status").notNull().default("Not Started"),
 	viewAs: viewAs("view_as").notNull(),
 	specialLabels: text("special_labels").array(),
 	remark: text("remark"),

@@ -32,7 +32,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { EditTaskAction, EditTaskResponse, createNewTask } from "@/app/actions";
 import { useRouter } from "next/navigation";
-import { ExtendedFormValues, PriorityLabels, Task, ViewAsType } from "@/types/types";
+import { ExtendedFormValues, PriorityLabels, Task, TaskStatus, ViewAsType } from "@/types/types";
+import { Switch } from "../ui/switch";
 const PRIORITYENUM = [
   "High",
   "Less",
@@ -46,7 +47,7 @@ const CATEGORYLIST = [
   "Work Tasks",
   "Household Chores",
 ] as const;
-const TASKSTATUSENUM = ["Not Started", "In Progress", "Finished", "Paused", "Scheduled"] as const
+const TASKSTATUSENUM = ["Not Started", "In Progress", "Finished", "Paused", "Scheduled", "Expired"] as const
 const categoryListArray = [
   "Morning Routine",
   "Work Tasks",
@@ -62,9 +63,7 @@ const categoryListArray = [
   priority: z.enum(PRIORITYENUM, {
     required_error: "You need to select a priority level type.",
   }),
-  remark: z.string().min(3, {
-    message: "Remark must be at least 3 characters.",
-  }),
+  remark: z.string().optional(),
   viewAs: z.enum(VIEWASENUM, {
     required_error: "You need to select a option below.",
   }),
@@ -77,7 +76,8 @@ const categoryListArray = [
     })),
   status: z.enum(TASKSTATUSENUM, {
     required_error: "Select one from dropdown.",
-  })
+  }),
+  locked: z.boolean()
 });
 
 export type formdata =  z.infer<typeof formSchema>
@@ -92,7 +92,8 @@ interface EditTaskFormProps {
     remark?: string | null,
     priorityLabel?: PriorityLabels | null,
     locked: boolean,
-    viewAs: ViewAsType
+    viewAs: ViewAsType,
+    status: TaskStatus
   },
   categoryName: string
 }
@@ -127,6 +128,8 @@ export function EditTaskForm({className, closeFun, data, categoryName}: EditTask
       remark: data?.remark || '',
       priority: data?.priorityLabel || 'Moderate',
       viewAs: data?.viewAs || 'Status',
+      status: data?.status || 'Not Started',
+      locked: data?.locked,
     },
   });
 
@@ -364,6 +367,28 @@ export function EditTaskForm({className, closeFun, data, categoryName}: EditTask
             </FormItem>
           )}
         />
+        <FormField
+              control={form.control}
+              name="locked"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      Lock 
+                    </FormLabel>
+                    <FormDescription>
+                      If you want to restrict further change to the task behaviour, you have the option to lock the task away.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
         <Button type="submit">Submit</Button>
       </form>
     </Form>
