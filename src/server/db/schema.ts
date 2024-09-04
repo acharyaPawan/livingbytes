@@ -158,13 +158,24 @@ export const trackers = pgTable("trackers", {
   createdOn: timestamp("created_on", {
     precision: 3,
     withTimezone: true,
-    mode: "string",
-  }).defaultNow(),
+    mode: "date",
+  }).defaultNow(),//date mode
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   status: trackerStatus("status").notNull().default('In Progress'),
   archived: boolean("archived").default(false),
+  startOn: timestamp("start_on", {
+    precision: 3,
+    withTimezone: true,
+    mode: "date",
+  }).defaultNow(),//added
+  endOn: timestamp("end_on", {
+    precision: 3,
+    withTimezone: true,
+    mode: "date",
+  }),//added
+  followUpDate: timestamp("followup_date", {precision: 3, withTimezone: true, mode: "date"}).notNull()//added
   //todo : add trakingTime
 });
 

@@ -6,7 +6,14 @@ export type PriorityLabels = "High" | "Less" | "Moderate" | "Very High" | "Very 
 export type TrackerFrequency = "Daily" | "Weekly" | "Monthly" | "Quarterly" | "HalfYearly" | "Yearly";
 export type ViewAsType = "Checkbox" | "Status";
 export type TaskType = "tasks" | "subtasks"
-
+// export const taskStatusValues: TaskStatus[] = [
+//   "Not Started",
+//   "In Progress",
+//   "Finished",
+//   "Paused",
+//   "Scheduled",
+//   "Expired",
+// ];
 
 //Priority number give it values multiple of 10 within reange of 100.
 

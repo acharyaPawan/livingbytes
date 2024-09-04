@@ -347,6 +347,20 @@ const TaskPage = async () => {
   console.log("data firn db: ",dataFromDb);
   // type resultType = typeof data;
   // console.log('data', await data())
+  const categoriesWithActiveTasks = dataFromDb
+  .map((cat) => ({
+    ...cat,
+    tasks: cat.tasks.filter((task) => task.status !== "Expired" && task.status !== "Scheduled")
+  }))
+  .filter((cat) => cat.tasks.length > 0);
+  const categoriesWithScheduledTasks = dataFromDb.map((cat) => ({
+    ...cat,
+    tasks: cat.tasks.filter((task) => task.status === "Scheduled")
+  })).filter((cat) => cat.tasks.length > 0);
+  const categoriesWithExpiredTasks = dataFromDb.map((cat) => ({
+    ...cat,
+    tasks: cat.tasks.filter((task) => task.status === "Expired")
+  })).filter((cat) => cat.tasks.length > 0);
 
   return (
     <div className="h-full w-full overflow-y-scroll scroll-smooth">
@@ -356,7 +370,23 @@ const TaskPage = async () => {
         <ScrollArea
           className={"h-full bg-background  text-gray-700 dark:text-slate-300"}
         >
-          <ScrollPreview data={dataFromDb} />
+          <ScrollPreview data={categoriesWithActiveTasks} />
+        </ScrollArea>
+      </div>
+      <div className="border">
+        <div>Scheuled Tasks</div>
+        <ScrollArea
+          className={"h-full bg-background  text-gray-700 dark:text-slate-300"}
+        >
+          <ScrollPreview data={categoriesWithScheduledTasks} />
+        </ScrollArea>
+      </div>
+      <div className="border">
+        <div>Expired Tasks</div>
+        <ScrollArea
+          className={"h-full bg-background  text-gray-700 dark:text-slate-300"}
+        >
+          <ScrollPreview data={categoriesWithExpiredTasks} />
         </ScrollArea>
       </div>
       <div>{/* completed Tasks aka history */}</div>

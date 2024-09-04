@@ -1,7 +1,7 @@
 "use client";
 
 import { resultType } from "@/app/(site)/(routes)/tasks2/db-queries";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState, useTransition } from "react";
 import { Switch } from "../ui/switch";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
@@ -25,7 +25,7 @@ import {
 } from "../ui/table";
 import { DeleteAlertDialog } from "../shared/DeleteAlertDialog";
 import { EditTask } from "../tasks/EditTask";
-import { PriorityLabels } from "@/types/types";
+import { PriorityLabels, TaskStatus, TaskType } from "@/types/types";
 import { AddNew } from "../tasks/AddNew";
 import { subtasks } from "drizzle/schema";
 import {
@@ -48,6 +48,14 @@ import {
   Smile,
   User,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,8 +65,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MyTimer, PopOverForUI, ThreeDotsVertical } from "./ui";
+import { FormError, FormSuccess, MyTimer, PopOverForUI, ThreeDotsVertical } from "./ui";
 import { Separator } from "../ui/separator";
+import { deleteFunctionality, updateStatus } from "@/app/actions";
+import { revalidateTagsAction } from "@/actions/utils";
+import { getErrorMessage } from "@/utils/misc";
+import { status } from "@/server/db/schema";
+import { ClassNameValue } from "tailwind-merge";
 
 enum RenderMode {
   Categorical = "categorical",
@@ -327,7 +340,8 @@ const StatusTaskRender = ({
         },
       )}
     >
-      <Popover>
+      <OptionsPopover t={t} type="tasks" buttonClassName={"absolute right-2 top-2 z-50 max-w-fit cursor-pointer"} />
+      {/* <Popover>
         <PopoverTrigger asChild>
           <button className="absolute right-2 top-2 z-50 max-w-fit cursor-pointer">
             <ThreeDotsVertical />
@@ -356,7 +370,7 @@ const StatusTaskRender = ({
             </Command>
           </div>
         </PopoverContent>
-      </Popover>
+      </Popover> */}
       <div className="relative mr-6 flex flex-row items-start justify-between">
         <div className=" flex flex-1 flex-wrap justify-between gap-2">
           <h1
@@ -474,7 +488,7 @@ const StatusTaskRender = ({
                       <div className="bold tracking-widest">{x.title} </div>
                       <span className="uppercase opacity-70">{x.status}</span>
                       {x.priorityLabel && <span className="italic opacity-70">{x.priorityLabel}</span>}
-                      <OptionsPopover type="Subtask" t={x} />
+                      <OptionsPopover type="subtasks" t={x} />
                     </div>
                     <Separator className="mb-1" />
                     </>
@@ -619,15 +633,78 @@ const TaskProperties = ({ t }: { t: resultType[0]["tasks"][0] }) => {
 };
 
 interface SubtaskPopverProps {
-  type: "Task" | "Subtask";
+  type: TaskType;
   t: resultType[0]["tasks"][0] | resultType[0]["tasks"][0]["subtasks"][0];
+  buttonClassName?: string;
 }
 
 const OptionsPopverView = ({ type, t }: SubtaskPopverProps) => {
+  const [isPending, startTransition] = useTransition()
+  const [success, setSuccess] = useState<string>()
+  const [error, setError] = useState<string>()
+  const handleLockClick = async (changeState: TaskStatus) => {
+    console.log("Sending req to backend.")
+    if (t.status === changeState) {
+      setError("Already .")
+      setInterval(() => {
+        setError("")
+      }, 3000);
+    }
+    await updateStatus(t.id, changeState, type).then(
+      (message) => {
+        if (message?.success) {
+          setSuccess(message.success)
+          setInterval(() => {
+            setSuccess("")
+          }, 3000);
+        }
+        if (message?.error) {
+          setError(message.error)
+          setInterval(() => {
+            setError("")
+          }, 3000);
+        }
+      }
+    ).catch((e) => {
+      setError("Error encountered.".concat(getErrorMessage(e)))
+      setInterval(() => {
+        setError("")
+      }, 3000);
+    })
+  }
+
+  const handleDeleteClick = async () => {
+    console.log("Sending req to backend.")
+    await deleteFunctionality(t.id, type).then(
+      (message) => {
+        if (message?.success) {
+          setSuccess(message.success)
+          setInterval(() => {
+            setSuccess("")
+          }, 3000);
+        }
+        if (message?.error) {
+          setError(message.error)
+          setInterval(() => {
+            setError("")
+          }, 3000);
+        }
+      }
+    ).catch((e) => {
+      setError("Error encountered.".concat(getErrorMessage(e)))
+      setInterval(() => {
+        setError("")
+      }, 3000);
+    })
+  }
   return (
-    <Command className="rounded-lg bg-indigo-400 text-white shadow-md md:min-w-[450px]">
+    <Command className="rounded-lg shadow-md md:min-w-[450px]">
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
+        <CommandEmpty>
+        {success && <FormSuccess message={success} />}
+        {error && <FormError message={error} />}
+        </CommandEmpty>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Options">
           <CommandItem>
@@ -636,16 +713,38 @@ const OptionsPopverView = ({ type, t }: SubtaskPopverProps) => {
             <CommandShortcut>⌘P</CommandShortcut>
           </CommandItem>
           <CommandItem>
+            {/* <Select
             <CreditCard className="mr-2 h-4 w-4" />
-            <span>Lock {type === "Task" ? "task" : "subtask"}</span>
-            <CommandShortcut>⌘B</CommandShortcut>
+            <button onClick={() => handleLockClick("In Progress")}>Change Status of  {type === "tasks" ? "task" : "subtask"}</button> */}
+            <Select onValueChange={async (value: TaskStatus) => await handleLockClick(value)}>
+  <SelectTrigger className="w-full outline-none">
+    <SelectValue placeholder="Status" />
+  </SelectTrigger>
+  <SelectContent>
+    {status.enumValues.map((status) => (
+      <SelectItem key={status}  value={status} disabled={status==="Scheduled"} className="flex flex-row justify-between"><span>{status}</span> </SelectItem>
+    ))}
+    {/* <SelectItem value="light">Light</SelectItem>
+    <SelectItem value="dark">Dark</SelectItem>
+    <SelectItem value="system">System</SelectItem> */}
+  </SelectContent>
+</Select>
+
+          <CommandShortcut>⌘B</CommandShortcut>
           </CommandItem>
           <CommandGroup heading={"Actions"}>
             <CommandItem>
               <CreditCard className="mr-2 h-4 w-4" />
               <span>
-                Mark it Completed {type === "Task" ? "task" : "subtask"}
+                Mark it Completed {type === "tasks" ? "task" : "subtask"}
               </span>
+              <CommandShortcut>⌘B</CommandShortcut>
+            </CommandItem>
+            <CommandItem>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <button onClick={async () => await handleDeleteClick()}>
+                Delete {type === "tasks" ? "task" : "subtask"}
+              </button>
               <CommandShortcut>⌘B</CommandShortcut>
             </CommandItem>
           </CommandGroup>
@@ -657,18 +756,18 @@ const OptionsPopverView = ({ type, t }: SubtaskPopverProps) => {
         </CommandGroup>
       </CommandList>
     </Command>
-  );
+  )
 };
 
-const OptionsPopover = ({ type, t }: SubtaskPopverProps) => {
+const OptionsPopover = ({ type, t, buttonClassName }: SubtaskPopverProps) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="">
+        <button className={buttonClassName}>
           <ThreeDotsVertical />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-full bg-indigo-500" side={"top"}>
+      <PopoverContent className="w-full" side="top">
         <OptionsPopverView type={type} t={t} />
       </PopoverContent>
     </Popover>
@@ -776,7 +875,7 @@ export const PreviewSubtasks = ({
               <span>Locked:{st.locked?.valueOf().toString()}</span>
               <span>{st.priorityLabel}</span>
               <span className="bold font-mono opacity-95 text-primary">Status: {st.status}</span>
-              <OptionsPopover type="Subtask" t={st} />
+              <OptionsPopover type="subtasks" t={st} />
             </div>
           </div>
         );

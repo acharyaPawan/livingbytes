@@ -142,7 +142,7 @@ export async function createNewTask(values: formdata) {
 
         if (values.scheduled && values.scheduledOn) {
           if (values.expiresOn <= values.scheduledOn) {
-            actionResponse = {error: {errorMessage: "scheduled date time is earlier than expire datetime."}}
+            actionResponse = {error: {errorMessage: "scheduled date time is greater than expire datetime."}}
             return actionResponse
           }
           const [insertedTaskResult] = await tx
@@ -331,7 +331,7 @@ export async function createNewSubtask(values: formdata, taskId: string) {
         let insertedSubtask: typeof subtasks.$inferInsert | undefined;
         if (values.scheduled && values.scheduledOn) {
           if (values.expiresOn <= values.scheduledOn) {
-            actionResponse = {error: {errorMessage: "scheduled date time is earlier than expire datetime."}}
+            actionResponse = {error: {errorMessage: "scheduled date time is later than expire datetime."}}
             return actionResponse
           }
           const [insertedSubtaskResult] = await tx
@@ -502,6 +502,7 @@ import type { ExtendedFormValues, TaskStatus, TaskType } from "@/types/types";
 import { revalidatePath } from "next/cache";
 import { formdata } from "@/components/tasks/AddNewForm";
 import { revalidateTagsAction } from "@/actions/utils";
+import { getErrorMessage } from "@/utils/misc";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user
@@ -647,9 +648,44 @@ export async function updateStatus(
   if (type === "tasks") {
     try {
       await db.transaction(async (tx) => {
+        const res = await db.query.tasks.findFirst({
+          where: eq(tasks.id, taskId)
+        })
+        if (!res || res.expiresOn < new Date()) {
+          if (statusStr !== "Expired") {
+            console.log("Changing status to expired due to expiry limit already breached.")
+            statusStr = "Expired"
+          }
+        }
         await tx.update(tasks).set({
           status: statusStr,
         }).where(eq(tasks.id, taskId));
+      });
+    } catch (e) {
+      return {
+        error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
+      };
+    }
+    await revalidateTagsAction(["all-tasks"])
+    return {
+      success: `Updated ${type} status to ${statusStr}`,
+    };
+  } 
+  if (type === "subtasks") {
+    try {
+      await db.transaction(async (tx) => {
+        const res = await db.query.subtasks.findFirst({
+          where: eq(subtasks.id, taskId)
+        })
+        if (!res || (res.expiresOn && res.expiresOn < new Date())) {
+          if (statusStr !== "Expired") {
+            console.log("Changing status to expired due to expiry limit already breached.")
+            statusStr = "Expired"
+          }
+        }
+        await tx.update(subtasks).set({
+          status: statusStr,
+        }).where(eq(subtasks.id, taskId));
       });
     } catch (e) {
       return {
@@ -659,6 +695,43 @@ export async function updateStatus(
     await revalidateTagsAction(["all-tasks"])
     return {
       success: `Updated ${type} status to ${statusStr}`,
+    };
+  }
+}
+
+
+export async function deleteFunctionality(
+  taskId: string,
+  type: TaskType,
+) {
+  if (type === "tasks") {
+    try {
+      await db.transaction(async (tx) => {
+        await tx.delete(tasks).where(eq(tasks.id, taskId));
+      });
+    } catch (e) {
+      return {
+        error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
+      };
+    }
+    await revalidateTagsAction(["all-tasks"])
+    return {
+      success: `Deleted ${type} ${taskId}.`,
+    };
+  } 
+  if (type === "subtasks") {
+    try {
+      await db.transaction(async (tx) => {
+        await tx.delete(subtasks).where(eq(subtasks.id, taskId));
+      });
+    } catch (e) {
+      return {
+        error: `Error Occurred while updating status : ${e}`,
+      };
+    }
+    await revalidateTagsAction(["all-tasks"])
+    return {
+      success: `Deleted ${type} ${taskId}.`,
     };
   }
 }
