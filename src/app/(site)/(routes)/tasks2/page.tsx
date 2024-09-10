@@ -2,11 +2,17 @@ import { getServerAuthSession } from "@/server/auth";
 import db from "@/server/db";
 import { subtasks, tasks } from "@/server/db/schema";
 import { redirect } from "next/navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"
 
-import { ScrollPreview } from "@/components/tasks2/PreviewScroll";
+import ScrollPreview from "@/components/tasks2/PreviewScroll";
 import { AddNew } from "@/components/tasks/AddNew";
 import { unstable_cache } from "next/cache";
+import dynamic from "next/dynamic";
+
+// const ScrollPreview = dynamic(() => import('@/components/tasks2/PreviewScroll'), {
+//   loading: () => <div>Loading.............</div>,
+//   ssr: true
+// })
 
 // console.log("data is ", data);
 
@@ -20,81 +26,81 @@ const TaskPage = async () => {
     return;
   }
 
-  const scheduledTaskToday = unstable_cache(async () => {
-    console.log("not cached.");
-    return await db.query.tasks.findMany({
-      where: (tasks, { gt, lt, eq, and }) =>
-        and(
-          gt(tasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
-          lt(tasks.effectiveOn, new Date(new Date().setHours(23, 59, 59, 999))),
-          eq(tasks.status, "Scheduled"),
-        ),
-    });
-  }, [
-    String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
-    String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
-  ], {tags: ["scheduled-task-today"]});
-  console.log("Scheduled task: ", await scheduledTaskToday());
+  // const scheduledTaskToday = unstable_cache(async () => {
+  //   console.log("not cached.");
+  //   return await db.query.tasks.findMany({
+  //     where: (tasks, { gt, lt, eq, and }) =>
+  //       and(
+  //         gt(tasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
+  //         lt(tasks.effectiveOn, new Date(new Date().setHours(23, 59, 59, 999))),
+  //         eq(tasks.status, "Scheduled"),
+  //       ),
+  //   });
+  // }, [
+  //   String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
+  //   String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
+  // ], {tags: ["scheduled-task-today"]});
+  // console.log("Scheduled task: ", await scheduledTaskToday());
 
-  const scheduledSubtaskToday = unstable_cache(async () => {
-    console.log("Not cached");
-    return await db.query.subtasks.findMany({
-      where: (subtasks, {gt, lt, eq, and}) => 
-        and(
-          gt(subtasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
-          lt(
-            subtasks.effectiveOn,
-            new Date(new Date().setHours(23, 59, 59, 999)),
-          ),
-          eq(subtasks.status, "Scheduled"),
-        ),
-    });
-  }, [
-    String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
-    String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
-  ], {tags: ['scheduled-subtask-today']});
-  console.log("Scheduled subtask: ", await scheduledSubtaskToday());
+  // const scheduledSubtaskToday = unstable_cache(async () => {
+  //   console.log("Not cached");
+  //   return await db.query.subtasks.findMany({
+  //     where: (subtasks, {gt, lt, eq, and}) => 
+  //       and(
+  //         gt(subtasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
+  //         lt(
+  //           subtasks.effectiveOn,
+  //           new Date(new Date().setHours(23, 59, 59, 999)),
+  //         ),
+  //         eq(subtasks.status, "Scheduled"),
+  //       ),
+  //   });
+  // }, [
+  //   String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
+  //   String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
+  // ], {tags: ['scheduled-subtask-today']});
+  // console.log("Scheduled subtask: ", await scheduledSubtaskToday());
 
-  //update tasks
-  // async function processTasks(tasks) {
-  //   const results = await Promise.all(tasks.map(async (task) => {
-  //     return await doAsyncTask(task);
-  //   }));
-  //   results.forEach(result => console.log(result));
+  // //update tasks
+  // // async function processTasks(tasks) {
+  // //   const results = await Promise.all(tasks.map(async (task) => {
+  // //     return await doAsyncTask(task);
+  // //   }));
+  // //   results.forEach(result => console.log(result));
+  // // }
+  // if (scheduledTaskToday.length !== 0) {
+  //   const results = await Promise.all(
+  //     (await scheduledTaskToday()).map(async (task) => {
+  //       return await db
+  //         .update(tasks)
+  //         .set({
+  //           status: "Not Started",
+  //         })
+  //         .catch((e) => {
+  //           return (
+  //             <div>Error Occurred: In scheduled retrieval updation part.</div>
+  //           );
+  //         });
+  //     }),
+  //   );
+  //   console.log("Tasks updated successfully.");
   // }
-  if (scheduledTaskToday.length !== 0) {
-    const results = await Promise.all(
-      (await scheduledTaskToday()).map(async (task) => {
-        return await db
-          .update(tasks)
-          .set({
-            status: "Not Started",
-          })
-          .catch((e) => {
-            return (
-              <div>Error Occurred: In scheduled retrieval updation part.</div>
-            );
-          });
-      }),
-    );
-    console.log("Tasks updated successfully.");
-  }
-  if (scheduledSubtaskToday.length !== 0) {
-    const results = await Promise.all(
-      (await scheduledSubtaskToday()).map(async (subtasks) => {
-        // return await db.update(subtasks)
-        return await db.update(subtasks).set({
-            status: "Not Started",
-          })
-          .catch((e) => {
-            return (
-              <div>Error Occurred: In scheduled retrieval updation part.</div>
-            );
-          });
-      }),
-    );
-    console.log("Subtasks updated successfully.");
-  }
+  // if (scheduledSubtaskToday.length !== 0) {
+  //   const results = await Promise.all(
+  //     (await scheduledSubtaskToday()).map(async (subtasks) => {
+  //       // return await db.update(subtasks)
+  //       return await db.update(subtasks).set({
+  //           status: "Not Started",
+  //         })
+  //         .catch((e) => {
+  //           return (
+  //             <div>Error Occurred: In scheduled retrieval updation part.</div>
+  //           );
+  //         });
+  //     }),
+  //   );
+  //   console.log("Subtasks updated successfully.");
+  // }
 
   const getCachedTasks = unstable_cache(async () => {
     console.log("Not cached.");

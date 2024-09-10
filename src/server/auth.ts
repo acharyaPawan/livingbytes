@@ -1,5 +1,5 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
@@ -10,9 +10,9 @@ import { type DefaultJWT, type JWT } from "next-auth/jwt";
 import GithubProvider from "next-auth/providers/github";
 
 import { env } from "@/env.mjs";
-import db from "./db";
-import { user } from "@/server/db/schema";
+import { categories, user } from "@/server/db/schema";
 import { type Adapter } from "next-auth/adapters";
+import db from "@/server/db/index";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -31,6 +31,7 @@ declare module "next-auth" {
       id: string;
       role: UserRole;
     } & DefaultSession["user"];
+    categoryId: string;
   }
 
   interface User {
@@ -51,6 +52,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: UserRole;
     emailVerified: Date | null;
+    categoryId: string;
   }
 }
 /**
@@ -60,16 +62,17 @@ declare module "next-auth/jwt" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session({ session, token }: { session: Session; token: JWT }) {
+    session({ session, token }) {
       if (token) {
         session.user.id = token.id;
         session.user.email = token.email;
         session.user.role = token.role;
         session.user.image = token.picture; // replace 'image' with 'picture'
+        session.categoryId = token.categoryId
       }
       return session;
     },
-    jwt: async ({ token }: { token: JWT }) => {
+    jwt: async ({token, trigger}) => {
       const userCheck = await db
         .select()
         .from(user)
@@ -81,6 +84,48 @@ export const authOptions: NextAuthOptions = {
         throw new Error("Unable to find user");
       }
 
+
+      let result
+
+      if (trigger === "signUp") {
+
+        if (!token.id) {
+          const [userCheck] = await db
+          .select({
+            userId: user.id
+          })
+          .from(user)
+          .where(sql`${user.email} = ${token.email}`);
+
+          if (!userCheck?.userId) {
+            throw new Error("UserId is not avalable.")
+          }
+
+
+          token.id = userCheck.userId
+        }
+        const [data] = await db.insert(categories).values({
+          priority: '60',
+          title: "Not Specified",
+          userId: token.id
+        }).returning({
+          categoryId: categories.id
+        })
+
+        if (!data?.categoryId) {
+          throw new Error("Unable to create a default category.")
+        }
+        result = data
+        token.categoryId = data.categoryId
+      }
+
+      const [categoryCheck] = await db.select({categoryId: categories.id}).from(categories).where(and(eq(categories.userId, token.id), eq(categories.id, token.categoryId)))
+      console.log("Category check rsult is ", categoryCheck)
+      if (!categoryCheck) {
+        console.log("No category")
+        throw new Error("No category exists.")
+      }
+
       return {
         id: dbUser.id,
         role: dbUser.role as UserRole,
@@ -89,6 +134,7 @@ export const authOptions: NextAuthOptions = {
         name: dbUser.name,
         picture: dbUser.image,
         sub: token.sub,
+        categoryId: categoryCheck.categoryId
       } as JWT;
     },
     signIn({ user, account, profile }) {

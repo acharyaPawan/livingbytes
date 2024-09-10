@@ -8,6 +8,7 @@
     "introspect": "drizzle-kit introspect:pg",
     "db:push": "dotenv drizzle-kit push:pg",
     "db:studio": "dotenv drizzle-kit studio",
+    "db:reset": "dotenv node dbresetScript.js",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"

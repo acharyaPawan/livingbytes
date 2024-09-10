@@ -102,7 +102,7 @@ export const categoriesRelation = relations(categories, ({ many }) => ({
 export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id")
-    .notNull()
+    // .notNull()
     .references(() => categories.id, { onDelete: "cascade" }),
   userId: text("userId")
     .notNull()
@@ -134,6 +134,7 @@ export const tasks = pgTable("tasks", {
   // scheduled: boolean("scheduled").default(false),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
+
 });
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
@@ -174,8 +175,9 @@ export const trackers = pgTable("trackers", {
     precision: 3,
     withTimezone: true,
     mode: "date",
-  }),//added
-  followUpDate: timestamp("followup_date", {precision: 3, withTimezone: true, mode: "date"}).notNull()//added
+  }).notNull(),//added
+  followUpDate: timestamp("followup_date", {precision: 3, withTimezone: true, mode: "date"}).notNull(),//added
+  remark: text("remark")
   //todo : add trakingTime
 });
 
@@ -206,7 +208,7 @@ export const tasksToTrackersRelations = relations(
 export const subtasks = pgTable("subtasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id")
-    .notNull()
+    // .notNull()
     .references(() => categories.id, { onDelete: "cascade" }),
   taskId: uuid("task_id")
     .notNull()

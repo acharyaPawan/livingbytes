@@ -46,7 +46,7 @@ const TrackerPage = async () => {
           <p>No trackers currently in your profile.</p>
         )}
       </div>
-      <AddNewTracker />
+      <AddNewTracker className="max-h-2/3 overflow-y-scroll" />
       {trackersFromDb.map((t) => {
         return (
           <div key={t.id} className="flex flex-col">

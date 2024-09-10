@@ -15,7 +15,7 @@ import {
 
 import { getServerSession } from "next-auth";
 
-const priorityNumberMap = {
+ const priorityNumberMap = {
   "Very High": 50,
   High: 40,
   Moderate: 30,

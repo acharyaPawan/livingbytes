@@ -147,7 +147,7 @@ const useCollapsedModeData = (data: resultType) => {
   };
 };
 
-export const ScrollPreview = ({ data }: { data: resultType }) => {
+ const ScrollPreview = ({ data }: { data: resultType }) => {
   const { expandedTasks, addTask, isExpandedTask } = useExpandedTasks();
   const { isCollapsed, setCollapsed, collapsedModeData } =
     useCollapsedModeData(data);
@@ -883,3 +883,7 @@ export const PreviewSubtasks = ({
     </div>
   );
 };
+
+
+
+export default ScrollPreview
