@@ -28,7 +28,7 @@ export const status = pgEnum("Status", [
   "In Progress",
   "Not Started",
   "Expired",
-  "Scheduled"
+  "Scheduled",
 ]);
 export const trackerFrequency = pgEnum("TrackerFrequency", [
   "Yearly",
@@ -43,7 +43,7 @@ export const trackerStatus = pgEnum("TrackerStatus", [
   "In Progress",
   "Not Started Yet",
   "Finished",
-  "Idle"
+  "Idle",
 ]);
 export const eventType = pgEnum("eventType", ["Range", "Single"]);
 
@@ -83,15 +83,12 @@ export const categories = pgTable("categories", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  priority: numeric("priority").notNull(),
+  user_order: numeric("user_order"),
   labels: text("labels").array(),
-  remark: text("remark"),
-  createdOn: timestamp("created_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "string",
-  }).defaultNow(),
   description: text("description"),
+
+  createdOn: timestamp("created_on").defaultNow(),
+  updatedOn: timestamp("updated_on").defaultNow(),
 });
 
 export const categoriesRelation = relations(categories, ({ many }) => ({
@@ -101,40 +98,28 @@ export const categoriesRelation = relations(categories, ({ many }) => ({
 
 export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
-  categoryId: uuid("category_id")
-    // .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }), //added
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade",}).notNull(),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }), //added
+
+
   title: text("title").notNull(),
   description: text("description"),
-  priority: numeric("priority").notNull(),
+  user_order: numeric("user_order"),
   priorityLabel: priorityLabels("priority_label").default("Moderate"),
+  labels: text("labels").array(),
   status: status("status").notNull().default("Not Started"),
   viewAs: viewAs("view_as").notNull().default("Status"),
-  specialLabels: text("special_labels").array(),
   remark: text("remark"),
-  checkpoint: integer("checkpoint").notNull().default(1),
-  effectiveOn: timestamp("effective_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).defaultNow().notNull(),
-  expiresOn: timestamp("expires_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).notNull(),
-  completedOn: timestamp("completed_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }),
+  // checkpoint: integer("checkpoint").notNull().default(1),
   // scheduled: boolean("scheduled").default(false),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
 
+effectiveOn: timestamp("effective_on").notNull().defaultNow(),
+  expiresOn: timestamp("expires_on").notNull(),
+  createdOn: timestamp("created_on").defaultNow(),
+  completedOn: timestamp("completed_on"),
+  updatedOn: timestamp("updated_on"),
 });
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
@@ -152,33 +137,22 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 
 export const trackers = pgTable("trackers", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
-  // taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+
   title: text("title").notNull(),
+  description: text("description"),
   frequency: trackerFrequency("frequency").notNull().default("Daily"),
-  // tracked: boolean("tracked").default(false), edited
-  createdOn: timestamp("created_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).defaultNow(),//date mode
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  status: trackerStatus("status").notNull().default('In Progress'),
+  status: trackerStatus("status").notNull().default("In Progress"),
+
   archived: boolean("archived").default(false),
-  startOn: timestamp("start_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).defaultNow(),//added
-  endOn: timestamp("end_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).notNull(),//added
-  followUpDate: timestamp("followup_date", {precision: 3, withTimezone: true, mode: "date"}).notNull(),//added
-  remark: text("remark")
-  //todo : add trakingTime
+
+  // followUpDate: timestamp("followup_date").notNull(),
+  remark: text("remark"),
+  locked: boolean("locked").default(false),
+
+  endOn: timestamp("end_on").notNull(),
+  startOn: timestamp("start_on").defaultNow(),
+  createdOn: timestamp("created_on").defaultNow(),
 });
 
 export const trackerRelation = relations(trackers, ({ many }) => ({
@@ -207,39 +181,28 @@ export const tasksToTrackersRelations = relations(
 
 export const subtasks = pgTable("subtasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
-  categoryId: uuid("category_id")
-    // .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  taskId: uuid("task_id")
-    .notNull()
-    .references(() => tasks.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").references(() => categories.id, {onDelete: "cascade",}).notNull(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+
+
   title: text("title").notNull(),
+  userOrder: numeric("user_order"),
   description: text("description"),
-  priority: numeric("priority").notNull(),
+  userId: numeric("user_id").notNull(),
   priorityLabel: priorityLabels("priority_label"),
   status: status("status").notNull().default("Not Started"),
   viewAs: viewAs("view_as").notNull().default("Status"),
-  specialLabels: text("special_labels").array(),
+  labels: text("labels").array(),
   remark: text("remark"),
-  checkpoint: integer("checkpoint").notNull().default(1),
-  effectiveOn: timestamp("effective_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }).defaultNow().notNull(),
-  expiresOn: timestamp("expires_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }),
-  completedOn: timestamp("completed_on", {
-    precision: 3,
-    withTimezone: true,
-    mode: "date",
-  }),
-  // scheduled: boolean("scheduled").default(false),
+  
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
+
+  createdOn: timestamp("created_on").defaultNow(),
+  effectiveOn: timestamp("effective_on").notNull().defaultNow(),
+  expiresOn: timestamp("expires_on"),
+  completedOn: timestamp("completed_on"),
+  updatedOn: timestamp("updated_on"),
 });
 
 export const subtasksRelations = relations(subtasks, ({ one }) => ({
@@ -250,16 +213,14 @@ export const subtasksRelations = relations(subtasks, ({ one }) => ({
   category: one(categories, {
     fields: [subtasks.categoryId],
     references: [categories.id],
-  })
+  }),
 }));
 
 export const schedules = pgTable(
   "schedules",
   {
     id: uuid("id").defaultRandom().primaryKey().notNull(),
-    userId: text("userId")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
     scheduleTimeStamp: timestamp("schedule_time_stamp", {
       withTimezone: true,
       mode: "string",
@@ -282,9 +243,6 @@ export const schedules = pgTable(
   },
 );
 
-// export const schedulesRelations = relations(schedules, ({one}) => ({
-//   none
-// }))
 
 export const singleDayEvents = pgTable(
   "single_day_events",
@@ -380,9 +338,7 @@ export const verificationToken = pgTable(
 export const account = pgTable(
   "account",
   {
-    userId: text("userId")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     provider: text("provider").notNull(),
     providerAccountId: text("providerAccountId").notNull(),

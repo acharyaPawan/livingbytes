@@ -63,16 +63,18 @@ declare module "next-auth/jwt" {
 export const authOptions: NextAuthOptions = {
   callbacks: {
     session({ session, token }) {
+      console.log("here;")
       if (token) {
         session.user.id = token.id;
         session.user.email = token.email;
         session.user.role = token.role;
         session.user.image = token.picture; // replace 'image' with 'picture'
-        session.categoryId = token.categoryId
+        // session.categoryId = token.categoryId
       }
       return session;
     },
     jwt: async ({token, trigger}) => {
+      console.log("here too");
       const userCheck = await db
         .select()
         .from(user)
@@ -84,47 +86,52 @@ export const authOptions: NextAuthOptions = {
         throw new Error("Unable to find user");
       }
 
+      token.id = dbUser.id
+      token.email = dbUser.email
+
+
+
 
       let result
 
-      if (trigger === "signUp") {
+      // if (trigger === "signUp") {
+      //   console.log("here 3")
+      //   // if (!token.id) {
+      //   //   const [userCheck] = await db
+      //   //   .select({
+      //   //     userId: user.id
+      //   //   })
+      //   //   .from(user)
+      //   //   .where(sql`${user.email} = ${token.email}`);
 
-        if (!token.id) {
-          const [userCheck] = await db
-          .select({
-            userId: user.id
-          })
-          .from(user)
-          .where(sql`${user.email} = ${token.email}`);
-
-          if (!userCheck?.userId) {
-            throw new Error("UserId is not avalable.")
-          }
+      //   //   if (!userCheck?.userId) {
+      //   //     throw new Error("UserId is not avalable.")
+      //   //   }
 
 
-          token.id = userCheck.userId
-        }
-        const [data] = await db.insert(categories).values({
-          priority: '60',
-          title: "Not Specified",
-          userId: token.id
-        }).returning({
-          categoryId: categories.id
-        })
+      //   //   token.id = userCheck.userId
+      //   // }
+      //   const [data] = await db.insert(categories).values({
+      //     priority: '60',
+      //     title: "Not Specified",
+      //     userId: token.id
+      //   }).returning({
+      //     categoryId: categories.id
+      //   })
 
-        if (!data?.categoryId) {
-          throw new Error("Unable to create a default category.")
-        }
-        result = data
-        token.categoryId = data.categoryId
-      }
+      //   if (!data?.categoryId) {
+      //     throw new Error("Unable to create a default category.")
+      //   }
+      //   result = data
+      //   token.categoryId = data.categoryId
+      // }
 
-      const [categoryCheck] = await db.select({categoryId: categories.id}).from(categories).where(and(eq(categories.userId, token.id), eq(categories.id, token.categoryId)))
-      console.log("Category check rsult is ", categoryCheck)
-      if (!categoryCheck) {
-        console.log("No category")
-        throw new Error("No category exists.")
-      }
+      // const [categoryCheck] = await db.select({categoryId: categories.id}).from(categories).where(and(eq(categories.userId, token.id), eq(categories.id, token.categoryId)))
+      // console.log("Category check rsult is ", categoryCheck)
+      // if (!categoryCheck) {
+      //   console.log("No category")
+      //   throw new Error("No category exists.")
+      // }
 
       return {
         id: dbUser.id,
@@ -134,7 +141,7 @@ export const authOptions: NextAuthOptions = {
         name: dbUser.name,
         picture: dbUser.image,
         sub: token.sub,
-        categoryId: categoryCheck.categoryId
+        // categoryId: categoryCheck.categoryId
       } as JWT;
     },
     signIn({ user, account, profile }) {
@@ -143,13 +150,15 @@ export const authOptions: NextAuthOptions = {
       console.log(account)
       console.log(profile)
 
-      const isAllowedToSignIn = true; // You can add your own login logic here
-      if (isAllowedToSignIn) {
-        return true; // Redirect to a specific page after sign in
-      } else {
-        // Return false to display a default error message
-        return false;
-      }
+      return true;
+
+      // const isAllowedToSignIn = true; // You can add your own login logic here
+      // if (isAllowedToSignIn) {
+      //   return true; // Redirect to a specific page after sign in
+      // } else {
+      //   // Return false to display a default error message
+      //   return false;
+      // }
     }
   },
   session: {
@@ -166,7 +175,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: env.GITHUB_CLIENT_SECRET,
     }),
   ],
-  pages: {},
+  debug: true
+  // pages: {},
 };
 
 export const getServerAuthSession = () => getServerSession(authOptions);

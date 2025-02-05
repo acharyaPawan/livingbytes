@@ -59,7 +59,7 @@ export async function createNewTask(values: formdata) {
   let scheduled: boolean = false;
 
   if (values.scheduled && values.scheduledOn instanceof Date) {
-    let scheduled = true;
+    scheduled = true;
   }
 
   if (!session) {
@@ -101,7 +101,7 @@ export async function createNewTask(values: formdata) {
           .values({
             userId: session.user.id,
             title: values.category,
-            priority: priorityNumberMap.Moderate.toString(),
+            //priority: priorityNumberMap.Moderate.toString(),
           })
           .returning();
 
@@ -152,9 +152,9 @@ export async function createNewTask(values: formdata) {
               categoryId: data?.insertedCategory?.id,
               title: values.title,
               description: values.description,
-              priority: (
-                priorityNumberMap[values.priority] + statusMap["Not Started"]
-              ).toString(),
+              //priority: (
+              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
+              //).toString(),
               priorityLabel: values.priority,
               status: "Scheduled",
               effectiveOn: values.scheduledOn,
@@ -173,15 +173,15 @@ export async function createNewTask(values: formdata) {
             return actionResponse
           }
           const [insertedTaskResult] = await tx
-            .insert(tasks)
+            .insert(tasks)  
             .values({
               userId: session.user.id,
               categoryId: data?.insertedCategory?.id,
               title: values.title,
               description: values.description,
-              priority: (
-                priorityNumberMap[values.priority] + statusMap["Not Started"]
-              ).toString(),
+              //priority: (
+              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
+              //).toString(),
               priorityLabel: values.priority,
               status: "Not Started",
               viewAs: values.viewAs,
@@ -270,7 +270,7 @@ export async function createNewSubtask(values: formdata, taskId: string) {
           .values({
             userId: session.user.id,
             title: values.category,
-            priority: priorityNumberMap.Moderate.toString(),
+            //priority: priorityNumberMap.Moderate.toString(),
           })
           .returning();
 
@@ -337,12 +337,13 @@ export async function createNewSubtask(values: formdata, taskId: string) {
           const [insertedSubtaskResult] = await tx
             .insert(subtasks)
             .values({
+              userId: session.user.id,
               taskId: taskId,
               categoryId: data?.insertedCategory?.id,
               title: values.title,
               description: values.description,
-              priority: (priorityNumberMap[values?.priority] + statusMap["Not Started"]
-              ).toString(),
+              //priority: (priorityNumberMap[values?.priority] + statusMap["Not Started"]
+              //).toString(),
               priorityLabel: values.priority,
               status: "Scheduled",
               effectiveOn: values.scheduledOn,
@@ -361,13 +362,14 @@ export async function createNewSubtask(values: formdata, taskId: string) {
           const [insertedSubtaskResult] = await tx
             .insert(subtasks)
             .values({
+              userId: session.user.id,
               taskId: taskId,
               categoryId: data?.insertedCategory?.id,
               title: values.title,
               description: values.description,
-              priority: (
-                priorityNumberMap[values.priority] + statusMap["Not Started"]
-              ).toString(),
+              //priority: (
+              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
+              //).toString(),
               priorityLabel: values.priority,
               status: "Not Started",
               viewAs: values.viewAs,
@@ -499,10 +501,11 @@ import {
 } from "drizzle-orm";
 // import type { formdata } from "@/components/tasks/AddNewForm";
 import type { ExtendedFormValues, TaskStatus, TaskType } from "@/types/types";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { formdata } from "@/components/tasks/AddNewForm";
 import { revalidateTagsAction } from "@/actions/utils";
 import { getErrorMessage } from "@/utils/misc";
+import { redirect } from "next/navigation";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user
@@ -645,6 +648,11 @@ export async function updateStatus(
   statusStr: TaskStatus,
   type: TaskType,
 ) {
+  const session = await getServerAuthSession()
+  if (!session) {
+    throw new Error("Unauthorized.")
+  }
+  const userId = session.user.id
   if (type === "tasks") {
     try {
       await db.transaction(async (tx) => {
@@ -666,7 +674,7 @@ export async function updateStatus(
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    await revalidateTagsAction(["all-tasks"])
+    revalidateTag(`all-tasks-${userId}`)
     return {
       success: `Updated ${type} status to ${statusStr}`,
     };
@@ -704,6 +712,12 @@ export async function deleteFunctionality(
   taskId: string,
   type: TaskType,
 ) {
+  const session = await getServerAuthSession();
+  if (!session) {
+    redirect("/api/auth/signin");
+
+  }
+  const userId = session.user.id
   if (type === "tasks") {
     try {
       await db.transaction(async (tx) => {
@@ -714,7 +728,8 @@ export async function deleteFunctionality(
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    await revalidateTagsAction(["all-tasks"])
+    revalidateTag(`all-tasks-${userId}`)
+    
     return {
       success: `Deleted ${type} ${taskId}.`,
     };

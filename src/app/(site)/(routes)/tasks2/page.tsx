@@ -7,169 +7,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import ScrollPreview from "@/components/tasks2/PreviewScroll";
 import { AddNew } from "@/components/tasks/AddNew";
 import { unstable_cache } from "next/cache";
-import dynamic from "next/dynamic";
+import { getCategorizedTask } from "@/data/task/task";
 
-// const ScrollPreview = dynamic(() => import('@/components/tasks2/PreviewScroll'), {
-//   loading: () => <div>Loading.............</div>,
-//   ssr: true
-// })
-
-// console.log("data is ", data);
-
-// type resultType = typeof data;
 
 const TaskPage = async () => {
-  // See if the user is logged in .
-  const session = await getServerAuthSession();
-  if (!session) {
-    redirect("/api/auth/signin");
-    return;
-  }
 
-  // const scheduledTaskToday = unstable_cache(async () => {
-  //   console.log("not cached.");
-  //   return await db.query.tasks.findMany({
-  //     where: (tasks, { gt, lt, eq, and }) =>
-  //       and(
-  //         gt(tasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
-  //         lt(tasks.effectiveOn, new Date(new Date().setHours(23, 59, 59, 999))),
-  //         eq(tasks.status, "Scheduled"),
-  //       ),
-  //   });
-  // }, [
-  //   String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
-  //   String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
-  // ], {tags: ["scheduled-task-today"]});
-  // console.log("Scheduled task: ", await scheduledTaskToday());
-
-  // const scheduledSubtaskToday = unstable_cache(async () => {
-  //   console.log("Not cached");
-  //   return await db.query.subtasks.findMany({
-  //     where: (subtasks, {gt, lt, eq, and}) => 
-  //       and(
-  //         gt(subtasks.effectiveOn, new Date(new Date().setHours(0, 0, 0, 0))),
-  //         lt(
-  //           subtasks.effectiveOn,
-  //           new Date(new Date().setHours(23, 59, 59, 999)),
-  //         ),
-  //         eq(subtasks.status, "Scheduled"),
-  //       ),
-  //   });
-  // }, [
-  //   String(new Date(new Date().setHours(0, 0, 0, 0)).getTime()),
-  //   String(new Date(new Date().setHours(23, 59, 59, 999)).getTime()),
-  // ], {tags: ['scheduled-subtask-today']});
-  // console.log("Scheduled subtask: ", await scheduledSubtaskToday());
-
-  // //update tasks
-  // // async function processTasks(tasks) {
-  // //   const results = await Promise.all(tasks.map(async (task) => {
-  // //     return await doAsyncTask(task);
-  // //   }));
-  // //   results.forEach(result => console.log(result));
-  // // }
-  // if (scheduledTaskToday.length !== 0) {
-  //   const results = await Promise.all(
-  //     (await scheduledTaskToday()).map(async (task) => {
-  //       return await db
-  //         .update(tasks)
-  //         .set({
-  //           status: "Not Started",
-  //         })
-  //         .catch((e) => {
-  //           return (
-  //             <div>Error Occurred: In scheduled retrieval updation part.</div>
-  //           );
-  //         });
-  //     }),
-  //   );
-  //   console.log("Tasks updated successfully.");
-  // }
-  // if (scheduledSubtaskToday.length !== 0) {
-  //   const results = await Promise.all(
-  //     (await scheduledSubtaskToday()).map(async (subtasks) => {
-  //       // return await db.update(subtasks)
-  //       return await db.update(subtasks).set({
-  //           status: "Not Started",
-  //         })
-  //         .catch((e) => {
-  //           return (
-  //             <div>Error Occurred: In scheduled retrieval updation part.</div>
-  //           );
-  //         });
-  //     }),
-  //   );
-  //   console.log("Subtasks updated successfully.");
-  // }
-
-  const getCachedTasks = unstable_cache(async () => {
-    console.log("Not cached.");
-    return await db.query.categories.findMany({
-      columns: {
-        id: true,
-        title: true,
-        priority: true,
-      },
-      with: {
-        tasks: {
-          columns: {
-            id: true,
-            effectiveOn: true,
-            expiresOn: true,
-            title: true,
-            description: true,
-            priorityLabel: true,
-            locked: true,
-            status: true,
-            viewAs: true,
-            priority: true,
-            remark: true,
-          },
-          with: {
-            subtasks: {
-              columns: {
-                title: true,
-                description: true,
-                remark: true,
-                priorityLabel: true,
-                effectiveOn: true,
-                expiresOn: true,
-                // categoryId: true,
-                locked: true,
-                id: true,
-                status: true,
-                viewAs: true,
-              },
-              with: {
-                category: {
-                  columns: {
-                    title: true,
-                  },
-                },
-              },
-            },
-            trackersTasksMap: {
-              columns: {},
-              with: {
-                tracker: {
-                  columns: {
-                    title: true,
-                  },
-                },
-              },
-            },
-          },
-          where: (tasks, { eq }) => eq(tasks.userId, session.user.id),
-          // where: and(isNull(tasks.completedOn), lt(tasks.expiresOn, new Date())),
-          orderBy: (tasks, { desc, asc }) => [
-            desc(tasks.priority),
-            desc(tasks.effectiveOn),
-          ],
-        },
-      },
-      orderBy: (categories, { desc }) => [desc(categories.priority)],
-    });
-  }, [session.user.id], {tags: ["all-tasks"]});
+  //Get Previews for tasks grouped by categories by default, although one can collapse, so searchParam is needed.
+  
 
   const mockData = [
     {
@@ -349,8 +193,7 @@ const TaskPage = async () => {
     // Add more items to reach 10 as needed
   ];
 
-  const dataFromDb = await getCachedTasks();
-  console.log("data firn db: ",dataFromDb);
+  const dataFromDb = await getCategorizedTask();
   // type resultType = typeof data;
   // console.log('data', await data())
   const categoriesWithActiveTasks = dataFromDb
@@ -376,7 +219,7 @@ const TaskPage = async () => {
         <ScrollArea
           className={"h-full bg-background  text-gray-700 dark:text-slate-300"}
         >
-          <ScrollPreview data={categoriesWithActiveTasks} />
+    <ScrollPreview data={categoriesWithActiveTasks} />
         </ScrollArea>
       </div>
       <div className="border">
@@ -399,17 +242,5 @@ const TaskPage = async () => {
     </div>
   );
 };
-
-// const ScrollPreview = ({
-//   data,
-//   children,
-// }: {
-//   data: any;
-//   children: ReactNode;
-// }) => {
-//   return <div>{}</div>;
-// };
-
-// const CategoryPreview = ({category})
 
 export default TaskPage;

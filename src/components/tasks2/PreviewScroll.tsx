@@ -1,6 +1,5 @@
 "use client";
 
-import { resultType } from "@/app/(site)/(routes)/tasks2/db-queries";
 import { ChangeEvent, useEffect, useState, useTransition } from "react";
 import { Switch } from "../ui/switch";
 import { cn } from "@/lib/utils";
@@ -72,13 +71,14 @@ import { revalidateTagsAction } from "@/actions/utils";
 import { getErrorMessage } from "@/utils/misc";
 import { status } from "@/server/db/schema";
 import { ClassNameValue } from "tailwind-merge";
+import { categoriesWithTasksType } from "@/data/task/task-db";
 
 enum RenderMode {
   Categorical = "categorical",
   Collapsed = "collapsed",
 }
 
-type collapsedModeData = (resultType["0"]["tasks"][0] & {
+type collapsedModeData = (categoriesWithTasksType["0"]["tasks"][0] & {
   category: string;
   id: string;
 })[];
@@ -114,7 +114,7 @@ const useExpandedTasks = () => {
   };
 };
 
-const useCollapsedModeData = (data: resultType) => {
+const useCollapsedModeData = (data: categoriesWithTasksType) => {
   const [isCollapsed, setCollapsed] = useState<boolean>(true);
   const [collapsedModeData, setCollapsedModeData] = useState<collapsedModeData>(
     [],
@@ -132,7 +132,7 @@ const useCollapsedModeData = (data: resultType) => {
         } else if (a.viewAs === "Status" && b.viewAs === "Checkbox") {
           return 1;
         } else {
-          return Number(b.priority) - Number(a.priority);
+          return 0;
         }
       });
 
@@ -147,7 +147,7 @@ const useCollapsedModeData = (data: resultType) => {
   };
 };
 
- const ScrollPreview = ({ data }: { data: resultType }) => {
+ const ScrollPreview = ({ data }: { data: categoriesWithTasksType }) => {
   const { expandedTasks, addTask, isExpandedTask } = useExpandedTasks();
   const { isCollapsed, setCollapsed, collapsedModeData } =
     useCollapsedModeData(data);
@@ -219,7 +219,7 @@ export const PreviewItem = ({
   isExpandedTask,
   // children,
 }: {
-  tasks: resultType[0]["tasks"];
+  tasks: categoriesWithTasksType[0]["tasks"];
   handleExtendTaskClick: (newTask: string) => void;
   isExpandedTask: (task: string) => boolean;
   // children: ReactNode;
@@ -241,7 +241,7 @@ export const PreviewItem = ({
               <h1 className="text-xl tracking-wide">{t.title}</h1>
               <p className="text-sm tracking-widest">{t.description}</p>
               <p>view As: {t.viewAs.toString()}</p>
-              <span>priority: {t.priority}</span>
+              {/*<span>priority: {t.priority}</span>*/}
             </div>
             <div className="flex gap-4">
               <span>locked: {t.locked?.valueOf()}</span>
@@ -578,7 +578,7 @@ const RenderCheckBox = ({ t }: { t: collapsedModeData[0] }) => {
   );
 };
 
-const TaskProperties = ({ t }: { t: resultType[0]["tasks"][0] }) => {
+const TaskProperties = ({ t }: { t: categoriesWithTasksType[0]["tasks"][0] }) => {
   return (
     <Table className="pb-0">
       <TableCaption className="text-white">Properties of Task</TableCaption>
@@ -634,7 +634,7 @@ const TaskProperties = ({ t }: { t: resultType[0]["tasks"][0] }) => {
 
 interface SubtaskPopverProps {
   type: TaskType;
-  t: resultType[0]["tasks"][0] | resultType[0]["tasks"][0]["subtasks"][0];
+  t: categoriesWithTasksType[0]["tasks"][0] | categoriesWithTasksType[0]["tasks"][0]["subtasks"][0];
   buttonClassName?: string;
 }
 
@@ -788,8 +788,8 @@ const DetailsPopover = ({ type, t }: SubtaskPopverProps) => {
 };
 
 type TaskOrSubtask =
-  | resultType[0]["tasks"][0]
-  | resultType[0]["tasks"][0]["subtasks"][0];
+  | categoriesWithTasksType[0]["tasks"][0]
+  | categoriesWithTasksType[0]["tasks"][0]["subtasks"][0];
 
 const TaskOrSubtaskProperties = ({ t }: { t: TaskOrSubtask }) => {
   return (
@@ -856,7 +856,7 @@ const TaskOrSubtaskProperties = ({ t }: { t: TaskOrSubtask }) => {
 export const PreviewSubtasks = ({
   st,
 }: {
-  st: resultType[0]["tasks"][0]["subtasks"];
+  st: categoriesWithTasksType[0]["tasks"][0]["subtasks"];
 }) => {
   return (
     <div className="rounded-md border border-slate-500 px-1">
