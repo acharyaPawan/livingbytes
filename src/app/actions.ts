@@ -63,10 +63,9 @@ export async function createNewTask(values: formdata) {
   }
 
   if (!session) {
-    const response: response = {
-      error: { authorizationError: true },
-    };
-    return response;
+    return {
+    "error": "Unauthorized"
+    }
   }
   console.log("We are here");
 

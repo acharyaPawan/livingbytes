@@ -191,9 +191,7 @@ export function AddNewForm({
           console.log("send req to revalidate scheduled and all tasks")
         } else {
           console.log("send req to all tasks")
-        await revalidateTagsAction(['all-tasks'])
         }
-
         //error management to bo done.
       } else {
         const response = await createNewSubtask(values, subtask.taskId);

@@ -193,7 +193,8 @@ const TaskPage = async () => {
     // Add more items to reach 10 as needed
   ];
 
-  const dataFromDb = await getCategorizedTask();
+const dataFromDb = await getCategorizedTask();
+  console.log("Data is :", dataFromDb)
   // type resultType = typeof data;
   // console.log('data', await data())
   const categoriesWithActiveTasks = dataFromDb

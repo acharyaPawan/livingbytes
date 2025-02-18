@@ -63,7 +63,9 @@ declare module "next-auth/jwt" {
 export const authOptions: NextAuthOptions = {
   callbacks: {
     session({ session, token }) {
-      console.log("here;")
+    console.log("in session callback;")
+    console.log("here session: ", session)
+    console.log("token", token);
       if (token) {
         session.user.id = token.id;
         session.user.email = token.email;
@@ -73,40 +75,42 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    jwt: async ({token, trigger}) => {
-      console.log("here too");
-      const userCheck = await db
-        .select()
-        .from(user)
-        .where(sql`${user.email} = ${token.email}`);
-      const dbUser = userCheck[0];
-
-      if (!dbUser) {
-        console.log("No User");
-        throw new Error("Unable to find user");
-      }
-
-      token.id = dbUser.id
-      token.email = dbUser.email
+    jwt: async ({token, trigger, user, profile}) => {
+      console.log("In jwt callback");
+      console.log("token", token)
+      console.log("trigger", trigger)
+      console.log("user", user);
+      console.log("profile", profile)
 
 
 
 
-      let result
 
-      // if (trigger === "signUp") {
-      //   console.log("here 3")
-      //   // if (!token.id) {
-      //   //   const [userCheck] = await db
-      //   //   .select({
-      //   //     userId: user.id
-      //   //   })
-      //   //   .from(user)
-      //   //   .where(sql`${user.email} = ${token.email}`);
+      console.log("At end jwt")
+      console.log("token", token)
+      console.log("user", user)
+      console.log("profile", profile)
 
-      //   //   if (!userCheck?.userId) {
-      //   //     throw new Error("UserId is not avalable.")
-      //   //   }
+      if (user) {
+        token.id = user.id;
+        token.role = user.role ?? UserRole.USER;
+      } 
+      // user is available when the trigger is signin or signup not in other
+      // let result
+
+    //  if (trigger === "signIn") {
+        // console.log("here 3")
+        // if (!token.id) {
+        //   const [userCheck] = await db
+        //   .select({
+        //     userId: user.id
+        //   })
+        //   .from(user)
+        //   .where(sql`${user.email} = ${token.email}`);
+
+        //   if (!userCheck?.userId) {
+        //     throw new Error("UserId is not avalable.")
+        //   }
 
 
       //   //   token.id = userCheck.userId
@@ -133,18 +137,20 @@ export const authOptions: NextAuthOptions = {
       //   throw new Error("No category exists.")
       // }
 
-      return {
-        id: dbUser.id,
-        role: dbUser.role as UserRole,
-        email: dbUser.email,
-        emailVerified: dbUser.emailVerified,
-        name: dbUser.name,
-        picture: dbUser.image,
-        sub: token.sub,
-        // categoryId: categoryCheck.categoryId
-      } as JWT;
+      return token as JWT
+      // return {
+      //   id: dbUser.id,
+      //   role: dbUser.role as UserRole,
+      //   email: dbUser.email,
+      //   emailVerified: dbUser.emailVerified,
+      //   name: dbUser.name,
+      //   picture: dbUser.image,
+      //   sub: token.sub,
+      //   // categoryId: categoryCheck.categoryId
+      // } as JWT;
     },
     signIn({ user, account, profile }) {
+      console.log("In signin callback")
       
       console.log(user)
       console.log(account)
