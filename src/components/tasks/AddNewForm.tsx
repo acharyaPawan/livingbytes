@@ -41,63 +41,13 @@ import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { Switch } from "../ui/switch";
 import { revalidateTagsAction } from "@/actions/utils";
+import { formSchema } from "../events/AddNewEvent";
+import { formSchemaAddNewTask } from "@/app/schemas";
 
-const PRIORITYENUM = [
-  "High",
-  "Less",
-  "Moderate",
-  "Very High",
-  "Very Less",
-] as const;
-const VIEWASENUM = ["Checkbox", "Status"] as const;
-const CATEGORYLIST = [
-  "Morning Routine",
-  "Work Tasks",
-  "Household Chores",
-  "Not Specified",
-] as const;
 
-const EXPIRYENUM = [
-  "By End Of Today",
-  "By Tomorrow",
-  "Set Custom",
-  "In 5 Hours",
-] as const;
 
-const formSchema = z.object({
-  title: z.string().min(3, {
-    message: "Title must be at least 3 characters.",
-  }),
-  description: z.string().optional(),
-  priority: z.enum(PRIORITYENUM, {
-    required_error: "You need to select a priority level type.",
-  }),
-  // remark: z.string().min(3, {
-  //   message: "Remark must be at least 3 characters.",
-  // }).optional(),
-  remark: z.string().optional(),
-  viewAs: z.enum(VIEWASENUM, {
-    required_error: "You need to select a option below.",
-  }),
-  category: z
-    .enum(CATEGORYLIST, {
-      required_error: "Select one from dropdown.",
-    })
-    .or(
-      z.string().min(3, {
-        message: "Category name must be 3 character long.",
-      }),
-    ),
-  expiresOn: z.date({
-    required_error: "Expiry date must be given.",
-  }),
-  shortListedExpiresOn: z.enum(EXPIRYENUM).optional(),
-  scheduled: z.boolean().default(false),
-  scheduledOn: z.date().optional(),
-  // customCategory: z.string().optional(),
-});
 
-export type formdata = z.infer<typeof formSchema>;
+ type formdata = z.infer<typeof formSchemaAddNewTask>;
 
 // Function to format the time as HH:MM
 const formatTime = (date: Date) => {
@@ -164,7 +114,7 @@ export function AddNewForm({
   };
 
   // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<z.infer<typeof formSchemaAddNewTask>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
@@ -180,38 +130,38 @@ export function AddNewForm({
   });
 
   // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchemaAddNewTask>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     startTransition(async () => {
       if (!subtask?.taskId) {
         const response = await createNewTask(values);
-        if (values.scheduled && values.scheduledOn) {
-          await revalidateTagsAction(['scheduled-task-today', 'all-tasks'])
-          console.log("send req to revalidate scheduled and all tasks")
-        } else {
-          console.log("send req to all tasks")
-        }
+        // if (values.scheduled && values.scheduledOn) {
+        //   await revalidateTagsAction(['scheduled-task-today', 'all-tasks'])
+        //   console.log("send req to revalidate scheduled and all tasks")
+        // } else {
+        //   console.log("send req to all tasks")
+        // }
         //error management to bo done.
       } else {
         const response = await createNewSubtask(values, subtask.taskId);
-        if (values.scheduled && values.scheduledOn) {
-          if (values.scheduledOn <= values.expiresOn) {
-            form.setError("scheduled", {message: "scheduled datetime is earlier than expiresOn"})
-          }
-          await revalidateTagsAction(['scheduled-subtask-today', 'all-tasks'])
-          console.log("send req to revalidate scheduled and all tasks")
+        // if (values.scheduled && values.scheduledOn) {
+        //   if (values.scheduledOn <= values.expiresOn) {
+        //     form.setError("scheduled", {message: "scheduled datetime is earlier than expiresOn"})
+        //   }
+        //   await revalidateTagsAction(['scheduled-subtask-today', 'all-tasks'])
+        //   console.log("send req to revalidate scheduled and all tasks")
 
-        } else {
-          if (new Date() <= values.expiresOn) {
-            form.setError("scheduled", {message: "expiry datetime is earlier than present datetime."})
-          }
-          console.log("send req to revalidate all tasks")
+        // } else {
+          // if (new Date() <= values.expiresOn) {
+          //   form.setError("scheduled", {message: "expiry datetime is earlier than present datetime."})
+          // }
+          // console.log("send req to revalidate all tasks")
 
-        await revalidateTagsAction([ 'all-tasks'])
-        }
+        // await revalidateTagsAction([ 'all-tasks'])
+        // }
       }
-      closeFun();
+      //closeFun();
       // await revalidatePathAction(["tasks2"])
       // router.refresh();
     });

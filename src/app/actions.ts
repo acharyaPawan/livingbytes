@@ -1,5 +1,11 @@
 "use server";
 
+const logDev = (...args: any[]) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(...args);
+  }
+};
+
 import { getEndOfDay, getEndOfDayISOString } from "@/lib/utils";
 import { authOptions, getServerAuthSession } from "@/server/auth";
 import db from "@/server/db";
@@ -15,7 +21,7 @@ import {
 
 import { getServerSession } from "next-auth";
 
- const priorityNumberMap = {
+const priorityNumberMap = {
   "Very High": 50,
   High: 40,
   Moderate: 30,
@@ -52,180 +58,85 @@ type response =
       };
     };
 
-export async function createNewTask(values: formdata) {
-  console.log("createNewTask Server component processing");
-  console.log(values);
-  const session = await getServerSession(authOptions);
-  let scheduled: boolean = false;
-
-  if (values.scheduled && values.scheduledOn instanceof Date) {
-    scheduled = true;
-  }
-
-  if (!session) {
-    return {
-    "error": "Unauthorized"
-    }
-  }
-  console.log("We are here");
-
-  let actionResponse: response;
-  const data: {
-    insertedCategory?: InferInsertModel<typeof categories>;
-    insertedTask?: InferInsertModel<typeof tasks>;
-  } = {};
+export async function createNewTask(
+  values: z.infer<typeof formSchemaAddNewTask>,
+) {
   try {
-    const dbResponse = await dbForTransaction.transaction(async (tx) => {
-      let skipCategoryGeneration = false;
-      const result = await tx
-        .select()
-        .from(categories)
-        .where(
-          and(
-            eq(categories.userId, session.user.id),
-            eq(categories.title, values.category),
-          ),
-        );
-      if (result.length > 0) {
-        actionResponse = { error: { categoryNameConflict: true } };
-        console.log("response is: ", actionResponse);
-        skipCategoryGeneration = true;
-        data.insertedCategory = result[0];
-      }
-      console.log("1st step completed without error");
+    logDev("In CreateNewTask");
+    logDev("Got:", values);
 
-      if (skipCategoryGeneration === false) {
-        const [insertedCategory] = await tx
-          .insert(categories)
-          .values({
-            userId: session.user.id,
-            title: values.category,
-            //priority: priorityNumberMap.Moderate.toString(),
-          })
-          .returning();
-
-        if (!insertedCategory) {
-          actionResponse = {
-            error: {
-              categoryDbError: true,
-            },
-          };
-          console.log("response is: ", actionResponse);
-          return actionResponse;
-        }
-        data.insertedCategory = insertedCategory;
-      }
-
-      console.log("2nd step completed without error");
-
-      if (data?.insertedCategory?.id) {
-        const result = await tx
-          .select()
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.categoryId, data?.insertedCategory?.id),
-              eq(tasks.title, values.title),
-            ),
-          );
-        if (result.length > 0) {
-          actionResponse = { error: { taskNameConflict: true } };
-          console.log("response is: ", actionResponse);
-          console.log("Further process stopped");
-          return actionResponse;
-        }
-
-        console.log("3rd step completed without error");
-
-        let insertedTask: typeof tasks.$inferInsert | undefined;
-
-        if (values.scheduled && values.scheduledOn) {
-          if (values.expiresOn <= values.scheduledOn) {
-            actionResponse = {error: {errorMessage: "scheduled date time is greater than expire datetime."}}
-            return actionResponse
-          }
-          const [insertedTaskResult] = await tx
-            .insert(tasks)
-            .values({
-              userId: session.user.id,
-              categoryId: data?.insertedCategory?.id,
-              title: values.title,
-              description: values.description,
-              //priority: (
-              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
-              //).toString(),
-              priorityLabel: values.priority,
-              status: "Scheduled",
-              effectiveOn: values.scheduledOn,
-              viewAs: values.viewAs,
-              expiresOn: values.expiresOn,
-              remark: values.remark,
-            })
-            .returning();
-
-          insertedTask = insertedTaskResult;
-          console.log("Scheduled task inserted.")
-
-        } else {
-          if (new Date() >= values.expiresOn) {
-            actionResponse = {error: {errorMessage: "expiry date time is earlier than present datetime."}}
-            return actionResponse
-          }
-          const [insertedTaskResult] = await tx
-            .insert(tasks)  
-            .values({
-              userId: session.user.id,
-              categoryId: data?.insertedCategory?.id,
-              title: values.title,
-              description: values.description,
-              //priority: (
-              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
-              //).toString(),
-              priorityLabel: values.priority,
-              status: "Not Started",
-              viewAs: values.viewAs,
-              expiresOn: values.expiresOn,
-              remark: values.remark,
-            })
-            .returning();
-
-          insertedTask = insertedTaskResult;
-        }
-
-        if (!insertedTask) {
-          actionResponse = { error: { taskDbError: true } };
-          console.log("response is: ", actionResponse);
-          console.log("further step aborted");
-          return actionResponse;
-        }
-
-        data.insertedTask = insertedTask;
-      }
-      console.log("4rth step completed without error");
-
-      actionResponse = {
-        data: {
-          insertedCategory: data.insertedCategory,
-          insertedTask: data.insertedTask,
-        },
+    //Check auth
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return {
+        error: "Unauthorized",
       };
-      // console.log("response is: ", actionResponse);
-      return actionResponse;
-    });
-    return dbResponse;
-  } catch (err) {
-    console.log("Error is: ", err);
-    actionResponse = {
-      error: {
-        errorMessage: err,
-      },
+    }
+
+    // Validate Data(types)
+    formSchemaAddNewTask.parse(values);
+
+    //Validate Data(Logical Constraints and Validity check)
+
+    //Get or create new category
+    
+      let category = await db.query.categories.findFirst({
+        where: and(
+          eq(categories.title, values.category),
+          eq(categories.userId, session.user.id),
+        ),
+        columns: {
+          id: true,
+        },
+      });
+      if (!category) {
+        const categoryInsertValue: InferInsertModel<typeof categories> = {
+          title: values.category,
+          userId: session.user.id,
+        };
+        const [insert] = await db
+          .insert(categories)
+          .values(categoryInsertValue)
+          .returning({ id: categories.id });
+        if (!insert) {
+          return {
+            error: "Server Error",
+          };
+        }
+        category = insert;
+      }
+
+    // Can't create new 
+    const insertValueTask: InferInsertModel<typeof tasks> = {
+      userId: session.user.id,
+      title: values.title,
+      categoryId: category.id,
+      expiresOn: values.expiresOn,
+      viewAs: values.viewAs,
+      priorityLabel: values.priority,
+    }
+    if (values.scheduledOn) insertValueTask['effectiveOn'] = values.scheduledOn
+    if (values.description) insertValueTask['description'] = values.description
+    if (values.remark) insertValueTask['remark'] = values.remark
+    await db.insert(tasks).values(insertValueTask)
+    return {
+      data: `Successfully created ${values.title}`
+    }
+
+  } catch (e) {
+    logDev(e);
+    if (e instanceof ZodError) {
+      return {
+        error: "Bad Request, Validation Failed.",
+      };
+    }
+    return {
+      error: "Server Error Encountered.",
     };
-    // revalidatePath("./tasks");
-    return actionResponse;
   }
 }
 
-export async function createNewSubtask(values: formdata, taskId: string) {
+export async function createNewSubtask(values: any, taskId: string) {
   console.log("createNewTask Server component processing");
   console.log(values);
   const session = await getServerSession(authOptions);
@@ -330,8 +241,13 @@ export async function createNewSubtask(values: formdata, taskId: string) {
         let insertedSubtask: typeof subtasks.$inferInsert | undefined;
         if (values.scheduled && values.scheduledOn) {
           if (values.expiresOn <= values.scheduledOn) {
-            actionResponse = {error: {errorMessage: "scheduled date time is later than expire datetime."}}
-            return actionResponse
+            actionResponse = {
+              error: {
+                errorMessage:
+                  "scheduled date time is later than expire datetime.",
+              },
+            };
+            return actionResponse;
           }
           const [insertedSubtaskResult] = await tx
             .insert(subtasks)
@@ -352,11 +268,16 @@ export async function createNewSubtask(values: formdata, taskId: string) {
             })
             .returning();
           insertedSubtask = insertedSubtaskResult;
-          console.log("Scheduled subtask inserted.")
+          console.log("Scheduled subtask inserted.");
         } else {
           if (new Date() >= values.expiresOn) {
-            actionResponse = {error: {errorMessage: "expiry date time is earlier than present datetime."}}
-            return actionResponse
+            actionResponse = {
+              error: {
+                errorMessage:
+                  "expiry date time is earlier than present datetime.",
+              },
+            };
+            return actionResponse;
           }
           const [insertedSubtaskResult] = await tx
             .insert(subtasks)
@@ -490,7 +411,7 @@ export async function EditTaskAction(values: ExtendedFormValues) {
 
 import type { formdataEvent } from "@/components/events/AddNewEvent";
 import { formSchema } from "@/components/events/AddNewEvent";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import {
   type InferInsertModel,
   type InferSelectModel,
@@ -501,10 +422,10 @@ import {
 // import type { formdata } from "@/components/tasks/AddNewForm";
 import type { ExtendedFormValues, TaskStatus, TaskType } from "@/types/types";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { formdata } from "@/components/tasks/AddNewForm";
 import { revalidateTagsAction } from "@/actions/utils";
 import { getErrorMessage } from "@/utils/misc";
 import { redirect } from "next/navigation";
+import { formSchemaAddNewTask } from "./schemas";
 
 export async function createEventAction(values: formdataEvent) {
   //Authenticate user
@@ -647,76 +568,81 @@ export async function updateStatus(
   statusStr: TaskStatus,
   type: TaskType,
 ) {
-  const session = await getServerAuthSession()
+  const session = await getServerAuthSession();
   if (!session) {
-    throw new Error("Unauthorized.")
+    throw new Error("Unauthorized.");
   }
-  const userId = session.user.id
+  const userId = session.user.id;
   if (type === "tasks") {
     try {
       await db.transaction(async (tx) => {
         const res = await db.query.tasks.findFirst({
-          where: eq(tasks.id, taskId)
-        })
+          where: eq(tasks.id, taskId),
+        });
         if (!res || res.expiresOn < new Date()) {
           if (statusStr !== "Expired") {
-            console.log("Changing status to expired due to expiry limit already breached.")
-            statusStr = "Expired"
+            console.log(
+              "Changing status to expired due to expiry limit already breached.",
+            );
+            statusStr = "Expired";
           }
         }
-        await tx.update(tasks).set({
-          status: statusStr,
-        }).where(eq(tasks.id, taskId));
+        await tx
+          .update(tasks)
+          .set({
+            status: statusStr,
+          })
+          .where(eq(tasks.id, taskId));
       });
     } catch (e) {
       return {
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    revalidateTag(`all-tasks-${userId}`)
+    revalidateTag(`all-tasks-${userId}`);
     return {
       success: `Updated ${type} status to ${statusStr}`,
     };
-  } 
+  }
   if (type === "subtasks") {
     try {
       await db.transaction(async (tx) => {
         const res = await db.query.subtasks.findFirst({
-          where: eq(subtasks.id, taskId)
-        })
+          where: eq(subtasks.id, taskId),
+        });
         if (!res || (res.expiresOn && res.expiresOn < new Date())) {
           if (statusStr !== "Expired") {
-            console.log("Changing status to expired due to expiry limit already breached.")
-            statusStr = "Expired"
+            console.log(
+              "Changing status to expired due to expiry limit already breached.",
+            );
+            statusStr = "Expired";
           }
         }
-        await tx.update(subtasks).set({
-          status: statusStr,
-        }).where(eq(subtasks.id, taskId));
+        await tx
+          .update(subtasks)
+          .set({
+            status: statusStr,
+          })
+          .where(eq(subtasks.id, taskId));
       });
     } catch (e) {
       return {
         error: `Error Occurred while updating status : ${e}`,
       };
     }
-    await revalidateTagsAction(["all-tasks"])
+    await revalidateTagsAction(["all-tasks"]);
     return {
       success: `Updated ${type} status to ${statusStr}`,
     };
   }
 }
 
-
-export async function deleteFunctionality(
-  taskId: string,
-  type: TaskType,
-) {
+export async function deleteFunctionality(taskId: string, type: TaskType) {
   const session = await getServerAuthSession();
   if (!session) {
     redirect("/api/auth/signin");
-
   }
-  const userId = session.user.id
+  const userId = session.user.id;
   if (type === "tasks") {
     try {
       await db.transaction(async (tx) => {
@@ -727,12 +653,12 @@ export async function deleteFunctionality(
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    revalidateTag(`all-tasks-${userId}`)
-    
+    revalidateTag(`all-tasks-${userId}`);
+
     return {
       success: `Deleted ${type} ${taskId}.`,
     };
-  } 
+  }
   if (type === "subtasks") {
     try {
       await db.transaction(async (tx) => {
@@ -743,7 +669,7 @@ export async function deleteFunctionality(
         error: `Error Occurred while updating status : ${e}`,
       };
     }
-    await revalidateTagsAction(["all-tasks"])
+    await revalidateTagsAction(["all-tasks"]);
     return {
       success: `Deleted ${type} ${taskId}.`,
     };

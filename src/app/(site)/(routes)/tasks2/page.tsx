@@ -13,7 +13,6 @@ import { getCategorizedTask } from "@/data/task/task";
 const TaskPage = async () => {
 
   //Get Previews for tasks grouped by categories by default, although one can collapse, so searchParam is needed.
-  
 
   const mockData = [
     {

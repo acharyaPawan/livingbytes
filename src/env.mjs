@@ -41,6 +41,9 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
+    NEXT_PUBLIC_NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
   },
 
@@ -51,6 +54,7 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_NODE_ENV: process.env.NODE_ENV,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_JWT_SECRET: process.env.NEXTAUTH_JWT_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,

@@ -83,13 +83,18 @@ export const categories = pgTable("categories", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  user_order: numeric("user_order"),
+  userOrder: numeric("user_order"),
   labels: text("labels").array(),
   description: text("description"),
 
   createdOn: timestamp("created_on").defaultNow(),
   updatedOn: timestamp("updated_on").defaultNow(),
-});
+}, (table) => ({
+  unqCategoryTitleAndUser: unique().on(table.title, table.userId),
+  userIdIdx: index().onOnly(table.userId),
+  userOrderIdx: index().onOnly(table.userOrder),
+  titleIdx: index().onOnly(table.title),
+}))
 
 export const categoriesRelation = relations(categories, ({ many }) => ({
   tasks: many(tasks),
@@ -111,7 +116,7 @@ export const tasks = pgTable("tasks", {
   viewAs: viewAs("view_as").notNull().default("Status"),
   remark: text("remark"),
   // checkpoint: integer("checkpoint").notNull().default(1),
-  // scheduled: boolean("scheduled").default(false),
+  scheduled: boolean("scheduled").default(false),
   locked: boolean("locked").default(false),
   flexible: boolean("flexible").default(false),
 
