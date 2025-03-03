@@ -14,6 +14,7 @@ export const getCachedCategorizedTask = (userId: string) => unstable_cache(async
       },
       with: {
         tasks: { 
+          where: (tasks, { isNull, and, eq }) => and(isNull(tasks.parentId), eq(tasks.userId, userId)),
           columns: {
             id: true,
             effectiveOn: true,
@@ -25,6 +26,7 @@ export const getCachedCategorizedTask = (userId: string) => unstable_cache(async
             status: true,
             viewAs: true,
             user_order: true,
+            parentId: true,
             remark: true,
           },
           with: {
@@ -60,8 +62,9 @@ export const getCachedCategorizedTask = (userId: string) => unstable_cache(async
                 },
               },
             },
+          
           },
-          where: (tasks, { eq }) => eq(tasks.userId, userId),
+          // where: (tasks, { eq }) => eq(tasks.userId, userId),
           // where: and(isNull(tasks.completedOn), lt(tasks.expiresOn, new Date())),
           orderBy: (tasks, { desc, asc }) => [
           //desc(tasks.prioiry),
@@ -78,3 +81,7 @@ export const getCachedCategorizedTask = (userId: string) => unstable_cache(async
   
   
   export type categoriesWithTasksType = Awaited<ReturnType<typeof getCachedCategorizedTask>>
+
+
+
+  

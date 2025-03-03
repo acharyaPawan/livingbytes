@@ -11,6 +11,7 @@ import {
   date,
   primaryKey,
   integer,
+  AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import { relations, sql } from "drizzle-orm";
@@ -105,7 +106,7 @@ export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade",}).notNull(),
   userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }), //added
-
+  parentId: uuid("parent_id").references((): AnyPgColumn  => tasks.id, { onDelete: "cascade" }),
 
   title: text("title").notNull(),
   description: text("description"),
@@ -133,11 +134,18 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [categories.id],
   }),
   trackersTasksMap: many(tasksToTrackers),
-  subtasks: many(subtasks),
+  // subtasks: many(subtasks),
   user: one(user, {
     fields: [tasks.userId],
     references: [user.id],
   }),
+  parentTask: one(tasks, {
+    fields: [tasks.parentId],
+    references: [tasks.id],
+    relationName: "subtasks",
+  }),
+  subtasks: many(tasks, {
+    relationName: "subtasks"})
 }));
 
 export const trackers = pgTable("trackers", {

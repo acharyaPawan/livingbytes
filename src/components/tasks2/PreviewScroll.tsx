@@ -151,6 +151,7 @@ const useCollapsedModeData = (data: categoriesWithTasksType) => {
   const { expandedTasks, addTask, isExpandedTask } = useExpandedTasks();
   const { isCollapsed, setCollapsed, collapsedModeData } =
     useCollapsedModeData(data);
+    console.log(data)
 
   return (
     <div>
@@ -483,7 +484,7 @@ const StatusTaskRender = ({
               <div>
                 {!isWideScreen &&
                   t.subtasks.map((x) => (
-                    <>
+                    <div key={x.id}>
                     <div className="flex gap-4 leading-8">
                       <div className="bold tracking-widest">{x.title} </div>
                       <span className="uppercase opacity-70">{x.status}</span>
@@ -491,7 +492,7 @@ const StatusTaskRender = ({
                       <OptionsPopover type="subtasks" t={x} />
                     </div>
                     <Separator className="mb-1" />
-                    </>
+                    </div>
                   ))}
                 {isWideScreen && <PreviewSubtasks st={t.subtasks} />}
               </div>

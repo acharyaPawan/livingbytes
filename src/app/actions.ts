@@ -119,6 +119,7 @@ export async function createNewTask(
     if (values.description) insertValueTask['description'] = values.description
     if (values.remark) insertValueTask['remark'] = values.remark
     await db.insert(tasks).values(insertValueTask)
+    revalidateTag(`all-tasks-${session.user.id}`);
     return {
       data: `Successfully created ${values.title}`
     }
@@ -136,200 +137,103 @@ export async function createNewTask(
   }
 }
 
-export async function createNewSubtask(values: any, taskId: string) {
-  console.log("createNewTask Server component processing");
-  console.log(values);
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    const response: response = {
-      error: { authorizationError: true },
-    };
-    return response;
-  }
-  console.log("We are here");
-
-  let actionResponse: response & { taskDonotExistError?: boolean };
-  const data: {
-    insertedCategory?: InferInsertModel<typeof categories>;
-    insertedSubtask?: InferInsertModel<typeof subtasks>;
-  } = {};
+export async function createNewSubtask(
+  values: z.infer<typeof formSchemaAddNewTask>,
+  taskId: string,
+) {
   try {
-    const dbResponse = await dbForTransaction.transaction(async (tx) => {
-      let skipCategoryGeneration = false;
-      const result = await tx
-        .select()
-        .from(categories)
-        .where(
-          and(
-            eq(categories.userId, session.user.id),
-            eq(categories.title, values.category),
-          ),
-        );
-      if (result.length > 0) {
-        actionResponse = { error: { categoryNameConflict: true } };
-        console.log("response is: ", actionResponse);
-        skipCategoryGeneration = true;
-        data.insertedCategory = result[0];
-      }
-      console.log("1st step completed without error");
+    logDev("In CreateNewTask");
+    logDev("Got:", values);
 
-      if (skipCategoryGeneration === false) {
-        const [insertedCategory] = await tx
-          .insert(categories)
-          .values({
-            userId: session.user.id,
-            title: values.category,
-            //priority: priorityNumberMap.Moderate.toString(),
-          })
-          .returning();
-
-        if (!insertedCategory) {
-          actionResponse = {
-            error: {
-              categoryDbError: true,
-            },
-          };
-          console.log("response is: ", actionResponse);
-          return actionResponse;
-        }
-        data.insertedCategory = insertedCategory;
-      }
-
-      console.log("2nd step completed without error");
-
-      //Additional
-      // Check if the task even exist
-      try {
-        const res = await db.query.tasks.findFirst({
-          columns: {
-            title: true,
-          },
-          where: (tasks, { and, eq }) =>
-            and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id)),
-        });
-
-        if (!res) {
-          actionResponse.taskDonotExistError = true;
-          return actionResponse;
-        }
-
-        console.log("result of finding task for subtask is:", res);
-      } catch (e) {
-        actionResponse.taskDonotExistError = true;
-        return actionResponse;
-      }
-
-      if (data?.insertedCategory?.id) {
-        const result = await tx
-          .select()
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.categoryId, data?.insertedCategory?.id),
-              eq(tasks.title, values.title),
-            ),
-          );
-        if (result.length > 0) {
-          actionResponse = { error: { taskNameConflict: true } };
-          console.log("response is: ", actionResponse);
-          console.log("Further process stopped");
-          return actionResponse;
-        }
-
-        console.log("3rd step completed without error");
-        let insertedSubtask: typeof subtasks.$inferInsert | undefined;
-        if (values.scheduled && values.scheduledOn) {
-          if (values.expiresOn <= values.scheduledOn) {
-            actionResponse = {
-              error: {
-                errorMessage:
-                  "scheduled date time is later than expire datetime.",
-              },
-            };
-            return actionResponse;
-          }
-          const [insertedSubtaskResult] = await tx
-            .insert(subtasks)
-            .values({
-              userId: session.user.id,
-              taskId: taskId,
-              categoryId: data?.insertedCategory?.id,
-              title: values.title,
-              description: values.description,
-              //priority: (priorityNumberMap[values?.priority] + statusMap["Not Started"]
-              //).toString(),
-              priorityLabel: values.priority,
-              status: "Scheduled",
-              effectiveOn: values.scheduledOn,
-              viewAs: values.viewAs,
-              expiresOn: values.expiresOn,
-              remark: values.remark,
-            })
-            .returning();
-          insertedSubtask = insertedSubtaskResult;
-          console.log("Scheduled subtask inserted.");
-        } else {
-          if (new Date() >= values.expiresOn) {
-            actionResponse = {
-              error: {
-                errorMessage:
-                  "expiry date time is earlier than present datetime.",
-              },
-            };
-            return actionResponse;
-          }
-          const [insertedSubtaskResult] = await tx
-            .insert(subtasks)
-            .values({
-              userId: session.user.id,
-              taskId: taskId,
-              categoryId: data?.insertedCategory?.id,
-              title: values.title,
-              description: values.description,
-              //priority: (
-              //  priorityNumberMap[values.priority] + statusMap["Not Started"]
-              //).toString(),
-              priorityLabel: values.priority,
-              status: "Not Started",
-              viewAs: values.viewAs,
-              expiresOn: values.expiresOn,
-              remark: values.remark,
-            })
-            .returning();
-          insertedSubtask = insertedSubtaskResult;
-        }
-
-        if (!insertedSubtask) {
-          actionResponse = { error: { taskDbError: true } };
-          console.log("response is: ", actionResponse);
-          console.log("further step aborted");
-          return actionResponse;
-        }
-
-        data.insertedSubtask = insertedSubtask;
-      }
-      console.log("4rth step completed without error");
-
-      actionResponse = {
-        data: {
-          insertedCategory: data.insertedCategory,
-          insertedSubtask: data.insertedSubtask,
-        },
+    //Check auth
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return {
+        error: "Unauthorized",
       };
-      // console.log("response is: ", actionResponse);
-      return actionResponse;
-    });
-    return dbResponse;
-  } catch (err) {
-    console.log("Error is: ", err);
-    actionResponse = {
-      error: {
-        errorMessage: err,
+    }
+
+    // Validate Data(types)
+    z.string().parse(taskId);
+    formSchemaAddNewTask.parse(values);
+
+
+    // Check if the taskId is valid
+    const task = await db.query.tasks.findFirst({
+      where: and(
+        eq(tasks.id, taskId),
+        eq(tasks.userId, session.user.id),
+      ),
+      columns: {
+        id: true,
       },
+    });
+    if (!task) {
+      return {
+        error: "Parent task not found",
+      };
+    }
+
+    //Validate Data(Logical Constraints and Validity check)
+
+    //Get or create new category
+    
+      let category = await db.query.categories.findFirst({
+        where: and(
+          eq(categories.title, values.category),
+          eq(categories.userId, session.user.id),
+        ),
+        columns: {
+          id: true,
+        },
+      });
+      if (!category) {
+        const categoryInsertValue: InferInsertModel<typeof categories> = {
+          title: values.category,
+          userId: session.user.id,
+        };
+        const [insert] = await db
+          .insert(categories)
+          .values(categoryInsertValue)
+          .returning({ id: categories.id });
+        if (!insert) {
+          return {
+            error: "Server Error",
+          };
+        }
+        category = insert;
+      }
+
+    // Can't create new 
+    const insertValueTask: InferInsertModel<typeof tasks> = {
+      parentId: taskId,
+      userId: session.user.id,
+      title: values.title,
+      categoryId: category.id,
+      expiresOn: values.expiresOn,
+      viewAs: values.viewAs,
+      priorityLabel: values.priority,
+    }
+    if (values.scheduledOn) insertValueTask['effectiveOn'] = values.scheduledOn
+    if (values.description) insertValueTask['description'] = values.description
+    if (values.remark) insertValueTask['remark'] = values.remark
+    await db.insert(tasks).values(insertValueTask)
+    revalidatePath(`/tasks2`);
+    // revalidateTag(`all-tasks-${session.user.id}`);
+    return {
+      data: `Successfully created ${values.title}`
+    }
+
+  } catch (e) {
+    logDev(e);
+    if (e instanceof ZodError) {
+      return {
+        error: "Bad Request, Validation Failed.",
+      };
+    }
+    return {
+      error: "Server Error Encountered.",
     };
-    // revalidatePath("./tasks");
-    return actionResponse;
   }
 }
 

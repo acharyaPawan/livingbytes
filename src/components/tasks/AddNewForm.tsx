@@ -115,7 +115,7 @@ export function AddNewForm({
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchemaAddNewTask>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchemaAddNewTask),
     defaultValues: {
       title: "",
       description: "",
@@ -136,6 +136,18 @@ export function AddNewForm({
     startTransition(async () => {
       if (!subtask?.taskId) {
         const response = await createNewTask(values);
+        if (response.data) {
+          toast({
+            title: "Success",
+            description: "Task created successfully.",
+          });
+        } else {
+            toast({
+            title: "Error",
+            description: "Task creation failed.",
+            variant: "destructive",
+            });
+        }
         // if (values.scheduled && values.scheduledOn) {
         //   await revalidateTagsAction(['scheduled-task-today', 'all-tasks'])
         //   console.log("send req to revalidate scheduled and all tasks")
@@ -145,6 +157,18 @@ export function AddNewForm({
         //error management to bo done.
       } else {
         const response = await createNewSubtask(values, subtask.taskId);
+        if (response.data) {
+          toast({
+            title: "Success",
+            description: "Subtask created successfully.",
+          });
+        } else {
+            toast({
+            title: "Error",
+            description: "Subtask creation failed.",
+            variant: "destructive",
+            });
+            }
         // if (values.scheduled && values.scheduledOn) {
         //   if (values.scheduledOn <= values.expiresOn) {
         //     form.setError("scheduled", {message: "scheduled datetime is earlier than expiresOn"})
@@ -161,7 +185,7 @@ export function AddNewForm({
         // await revalidateTagsAction([ 'all-tasks'])
         // }
       }
-      //closeFun();
+      closeFun();
       // await revalidatePathAction(["tasks2"])
       // router.refresh();
     });

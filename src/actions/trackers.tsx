@@ -42,7 +42,7 @@ export async function createNewTracker(values: formdataCreateNewTracker) {
       endOn: validationResult.range.to,
       userId: session.user.id,
       remark: validationResult.remark,
-      followUpDate: validationResult.range.from
+      // followUpDate: validationResult.range.from
     }
 
     await db.transaction(async (tx) => {
