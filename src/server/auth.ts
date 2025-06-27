@@ -95,6 +95,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role ?? UserRole.USER;
       } 
+
       // user is available when the trigger is signin or signup not in other
       // let result
 

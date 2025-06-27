@@ -123,12 +123,6 @@ export const taskRouter = createTRPCRouter({
       c.priority;       
     `
 
-
-    const res6 = await db.query.categories.findMany({
-      with: {
-        
-      }
-    })
     const startTime = performance.now()
     const res = await db.execute(sqlCommand)
     const endTime = performance.now()
