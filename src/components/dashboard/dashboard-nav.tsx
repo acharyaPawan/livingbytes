@@ -80,37 +80,55 @@ const DashboardNav = () => {
             {/* Sidebar */}
             <div className={`flex flex-col ${toggle ? "items-start fixed top-0 right-0 bottom-0 left-0" : "hidden"} h-[100vh] border-white rounded-r-[0.75rem] max-h-[unset] bg-neutral-50 dark:bg-[#161b22]  w-sidebarWidth shadow-sidebarShadow z-[999] min-w-[192px]`}>
               <div className='header flex flex-row justify-start gap-2 p-[0.5rem_0.5rem_0rem_0.5rem] break-words w-full'>
-                <div className='titleWrapper p-[0.5rem_0_0.375rem_0.5rem] w-full overflow-x-hidden'>
-                  LivingByte
-                </div>
-                <div className='actionWrapper flex flex-row p-2'>
-                  <button className='cursor-pointer h-8 w-8 grid place-content-center relative border rounded-[0.375rem] border-transparent bg-neutral-800 text-white self-start' onClick={() => setToggle((prevToggle) => !prevToggle)}>
-                    <X height={8} width={8} />
-                  </button>
-                </div>
+          <div className='titleWrapper p-[0.5rem_0_0.375rem_0.5rem] w-full overflow-x-hidden'>
+            LivingByte
+          </div>
+          <div className='actionWrapper flex flex-row p-2'>
+            <button className='cursor-pointer h-8 w-8 grid place-content-center relative border rounded-[0.375rem] border-transparent bg-neutral-800 text-white self-start' onClick={() => setToggle((prevToggle) => !prevToggle)}>
+              <X height={8} width={8} />
+            </button>
+          </div>
               </div>
               <div className='overlayBody p-[0rem_0.5rem_1rem_0.5rem] w-full'>
-                <ul className='p-2 flex flex-col gap-4'>
-                  {menuLinks.map((nav, index) => (
-                    <li
-                      key={nav.id}
-                      className={`font-poppins font-normal cursor-pointer outline-1 text-[16px] text-zinc-700 hover:bg-neutral-200 dark:hover:bg-[#292f36] hover:text-zinc-950 focus-within:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200 dark:focus-within:text-zinc-200 ${active === nav.title ? "text-white" : "text-dimWhite"
-                        } px-2 py-[0.375rem] rounded-[0.375rem]`}
-                      onClick={() => setActive(nav.title) }
-                    >
-                      <Link href={`/${nav.id}`}>{nav.title}</Link>
-                    </li>
-                  ))}
-                </ul>
+          <ul className='p-2 flex flex-col gap-4'>
+            {menuLinks.map((nav, index) => (
+              <li
+                key={nav.id}
+                className={`font-poppins font-normal cursor-pointer outline-1 text-[16px] text-zinc-700 hover:bg-neutral-200 dark:hover:bg-[#292f36] hover:text-zinc-950 focus-within:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200 dark:focus-within:text-zinc-200 ${active === nav.title ? "text-white" : "text-dimWhite"
+            } px-2 py-[0.375rem] rounded-[0.375rem]`}
+                onClick={() => setActive(nav.title) }
+              >
+                <Link href={`/${nav.id}`}>{nav.title}</Link>
+              </li>
+            ))}
+          </ul>
               </div>
               {/* Additional content */}
             </div>
+            {/* Close sidebar when clicking outside */}
+            {toggle && (
+              <div
+          className="fixed inset-0 z-[998]"
+          onClick={() => setToggle(false)}
+          aria-label="Sidebar overlay"
+          tabIndex={-1}
+              />
+            )}
           </div>
           <div className='flex justify-center align-center border-x-[0.5px] w-8 h-8 border-white'>
             <span className='m-auto h-8'>LB</span>
           </div>
           <span className='font-bold h-8'>{link}</span>
         </div>
+        {/* Right Sidebar Overlay */}
+        {rightToggle && (
+          <div
+            className="fixed inset-0 z-[998]"
+            onClick={() => setRightToggle(false)}
+            aria-label="Right sidebar overlay"
+            tabIndex={-1}
+          />
+        )}
         <div className='flex gap-3'>
           <ModeToggle />
           <button className='bg-black rounded-full h-8 w-8' onClick={() => setRightToggle((prevToggle) => !prevToggle)}>

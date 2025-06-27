@@ -10,11 +10,6 @@ import { ZodError, z } from "zod"
 import { revalidateTagsAction } from "./utils"
 import { PRIORITYENUM } from "@/app/constants"
 
-// function getEndOfToday() {
-//   const today = new Date();
-//   return new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
-// }
-
 const MODERATE_TASK_PRIORITY_VALUE: number = 60
 
 
@@ -31,18 +26,9 @@ export async function createNewTracker(values: formdataCreateNewTracker) {
         error: "Not authenticated."
       }
     }
-    // let validationResult: formdataCreateNewTracker
+
     const validationResult = FormSchemaCreateNewTracker.parse(values)
-    // let insertValues: typeof trackers.$inferInsert
-    // insertValues = {
-    //   title: validationResult.title,
-    //   frequency: validationResult.frequency,
-    //   startOn: validationResult.range.from,
-    //   endOn: validationResult.range.to,
-    //   userId: session.user.id,
-    //   remark: validationResult.remark,
-    //   // followUpDate: validationResult.range.from
-    // }
+ 
 
     await db.transaction(async (tx) => {
       console.log("Here")
@@ -54,7 +40,6 @@ export async function createNewTracker(values: formdataCreateNewTracker) {
           throw new Error("Referenced task not found.");
         }
         throw new Error("Under development.");
-        // if res.status !== "Expired" && tasks.expiresOn 
       }
 
       let categoryId = await tx.query.categories.findFirst({
