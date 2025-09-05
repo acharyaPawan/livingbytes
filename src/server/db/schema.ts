@@ -196,12 +196,13 @@ export const subtasks = pgTable("subtasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id").references(() => categories.id, {onDelete: "cascade",}).notNull(),
   taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }), //added
+
 
 
   title: text("title").notNull(),
   userOrder: numeric("user_order"),
   description: text("description"),
-  userId: numeric("user_id").notNull(),
   priorityLabel: priorityLabels("priority_label"),
   status: status("status").notNull().default("Not Started"),
   viewAs: viewAs("view_as").notNull().default("Status"),

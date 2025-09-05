@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFormState } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 
@@ -130,11 +130,13 @@ export function AddNewForm({
   });
 
   // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchemaAddNewTask>) {
+ function onSubmit(values: z.infer<typeof formSchemaAddNewTask>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
+    console.log("In onsubmit")
     startTransition(async () => {
       if (!subtask?.taskId) {
+        console.log("here")
         const response = await createNewTask(values);
         if (response.data) {
           toast({
@@ -256,6 +258,9 @@ export function AddNewForm({
       form.setValue("scheduledOn", updatedDate);
     }
   };
+
+  console.log("Form errors: ", JSON.stringify(form.formState.errors, null, 2))
+
   return (
     <Form {...form}>
       <form

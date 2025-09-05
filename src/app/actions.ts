@@ -142,7 +142,7 @@ export async function createNewSubtask(
   taskId: string,
 ) {
   try {
-    logDev("In CreateNewTask");
+    logDev("In CreateNewSubTask");
     logDev("Got:", values);
 
     //Check auth
@@ -152,6 +152,8 @@ export async function createNewSubtask(
         error: "Unauthorized",
       };
     }
+
+    console.log("User id is: ", session.user.id)
 
     // Validate Data(types)
     z.string().parse(taskId);
@@ -173,6 +175,8 @@ export async function createNewSubtask(
         error: "Parent task not found",
       };
     }
+
+    console.log("task id is valid", task.id)
 
     //Validate Data(Logical Constraints and Validity check)
 
@@ -205,8 +209,8 @@ export async function createNewSubtask(
       }
 
     // Can't create new 
-    const insertValueTask: InferInsertModel<typeof tasks> = {
-      parentId: taskId,
+    const insertValueTask: InferInsertModel<typeof subtasks> = {
+      taskId: task.id,
       userId: session.user.id,
       title: values.title,
       categoryId: category.id,
@@ -217,8 +221,8 @@ export async function createNewSubtask(
     if (values.scheduledOn) insertValueTask['effectiveOn'] = values.scheduledOn
     if (values.description) insertValueTask['description'] = values.description
     if (values.remark) insertValueTask['remark'] = values.remark
-    await db.insert(tasks).values(insertValueTask)
-    revalidatePath(`/tasks2`);
+    await db.insert(subtasks).values(insertValueTask)
+    revalidatePath(`/tasks`);
     // revalidateTag(`all-tasks-${session.user.id}`);
     return {
       data: `Successfully created ${values.title}`

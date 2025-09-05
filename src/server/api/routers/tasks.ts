@@ -6,7 +6,7 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 import { sql } from "drizzle-orm";
-import postgres from '@vercel/postgres'
+import postgres from "postgres";
 import db from "@/server/db";
 import { inferAsyncReturnType } from "@trpc/server";
 import { ResultBuilder } from "pg";

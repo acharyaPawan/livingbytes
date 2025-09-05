@@ -149,9 +149,8 @@ const useCollapsedModeData = (data: categoriesWithTasksType) => {
 
  const ScrollPreview = ({ data }: { data: categoriesWithTasksType }) => {
   const { expandedTasks, addTask, isExpandedTask } = useExpandedTasks();
-  const { isCollapsed, setCollapsed, collapsedModeData } =
-    useCollapsedModeData(data);
-    console.log(data)
+  const { isCollapsed, setCollapsed, collapsedModeData } =useCollapsedModeData(data);
+  console.log(data)
 
   return (
     <div>

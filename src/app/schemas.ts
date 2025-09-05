@@ -41,7 +41,7 @@ export const formSchemaAddNewTask = z
     message: "Impartial Data. If scheduled, schedule Date must be provided.",
     path: ["scheduledOn"],
   })
-  .refine((data) => !(data.scheduledOn && data.expiresOn < data.scheduledOn), {
+  .refine((data) => !(data.scheduled && data.scheduledOn && data.expiresOn < data.scheduledOn), {
     message: "Schedule Date must be before expiry date",
     path: ["scheduledOn"],
   });
