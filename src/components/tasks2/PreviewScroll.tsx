@@ -507,7 +507,7 @@ const StatusTaskRender = ({
             <div className="text-xl tracking-tighter font-poppins">Trackers</div>
             {trackers?.length === 0 && "No trackers"}
             {trackers?.length !== 0 &&
-              trackers.map((x) => <div>{x?.title}</div>)}
+              trackers.map((x) => <div key={x?.id}>{x?.title}</div>)}
           </div>
         </div>
       )}
