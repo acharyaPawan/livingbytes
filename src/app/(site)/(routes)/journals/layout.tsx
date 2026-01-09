@@ -10,7 +10,7 @@ export default function JournalPageLayout({
 
 
   return (
-    <div className="max-w-screen-lg mt-4">
+    <div className="mx-auto mt-6 max-w-5xl space-y-6 px-4 pb-10">
       {children}
     </div>
   );
