@@ -119,7 +119,7 @@ export async function createNewTask(
     if (values.description) insertValueTask['description'] = values.description
     if (values.remark) insertValueTask['remark'] = values.remark
     await db.insert(tasks).values(insertValueTask)
-    revalidateTag(`all-tasks-${session.user.id}`);
+    revalidateTag(`all-tasks-${session.user.id}`, "max");
     return {
       data: `Successfully created ${values.title}`
     }
@@ -507,7 +507,7 @@ export async function updateStatus(
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    revalidateTag(`all-tasks-${userId}`);
+    revalidateTag(`all-tasks-${userId}`, "max");
     return {
       success: `Updated ${type} status to ${statusStr}`,
     };
@@ -561,7 +561,7 @@ export async function deleteFunctionality(taskId: string, type: TaskType) {
         error: `Error Occurred while updating status : ${getErrorMessage(e)}`,
       };
     }
-    revalidateTag(`all-tasks-${userId}`);
+    revalidateTag(`all-tasks-${userId}`, "max");
 
     return {
       success: `Deleted ${type} ${taskId}.`,

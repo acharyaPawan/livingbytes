@@ -14,7 +14,7 @@ export async function revalidatePathAction(paths: string[]) {
 export async function revalidateTagsAction(tags: string[]) {
   console.log(`${tags} revalidated.`)
   tags.forEach((tag) => {
-    revalidateTag(tag)
+    revalidateTag(tag, "max")
   })
   return;
 }

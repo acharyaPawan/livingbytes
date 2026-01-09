@@ -3,7 +3,6 @@
 import { updateJournalTitle } from "@/actions/journals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { revalidatePath } from "next/cache";
 import { ReactNode, useState, useTransition } from "react";
 
 const useControlledInput = () => {
