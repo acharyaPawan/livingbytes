@@ -61,6 +61,12 @@ export const JournalBoard = ({ initialPage, stats }: Props) => {
     [hasAttachment, hasContent, range?.from, range?.to, search],
   );
 
+  const dedupe = (list: JournalFeedEntry[]) => {
+    const map = new Map<string, JournalFeedEntry>();
+    list.forEach((item) => map.set(item.id, item));
+    return Array.from(map.values());
+  };
+
   const refreshWithFilters = () =>
     startTransition(async () => {
       const res = await utils.journal.list.fetch({
@@ -68,7 +74,7 @@ export const JournalBoard = ({ initialPage, stats }: Props) => {
         cursor: undefined,
         filters,
       });
-      setEntries(res.items);
+      setEntries(dedupe(res.items));
       setCursor(res.nextCursor ?? null);
     });
 
@@ -84,7 +90,7 @@ export const JournalBoard = ({ initialPage, stats }: Props) => {
         cursor: undefined,
         filters: {},
       });
-      setEntries(res.items);
+      setEntries(dedupe(res.items));
       setCursor(res.nextCursor ?? null);
     });
 
@@ -96,12 +102,12 @@ export const JournalBoard = ({ initialPage, stats }: Props) => {
         cursor,
         filters,
       });
-      setEntries((prev) => [...prev, ...res.items]);
+      setEntries((prev) => dedupe([...prev, ...res.items]));
       setCursor(res.nextCursor ?? null);
     });
 
   const handleCreated = (entry: JournalFeedEntry) => {
-    setEntries((prev) => [entry, ...prev]);
+    setEntries((prev) => dedupe([entry, ...prev]));
     toast({ title: "Added", description: "New entry added to your feed." });
   };
 
