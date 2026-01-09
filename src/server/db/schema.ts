@@ -12,6 +12,7 @@ import {
   primaryKey,
   integer,
   AnyPgColumn,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { relations, sql } from "drizzle-orm";
@@ -301,7 +302,7 @@ export const journals = pgTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    date: timestamp("date").notNull().unique(),
+    date: timestamp("date").notNull(),
     fileUrl: text("file_url"),
     title: text("title"),
     description: text("description"),
@@ -309,6 +310,10 @@ export const journals = pgTable(
   },
   (table) => ({
     dateIdx: index("date_idx").on(table.date),
+    userDateUnique: uniqueIndex("journals_user_date_unique").on(
+      table.userId,
+      table.date,
+    ),
   }),
 );
 
