@@ -1,10 +1,24 @@
-"use client"
-
+"use client";
 
 import * as React from "react";
+import { format } from "date-fns";
+import { CalendarClock, CalendarIcon, Plus, RefreshCcw, Sparkles } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
 
-import { cn, getEndOfDay } from "@/lib/utils";
+import { createNewTracker } from "@/actions/trackers";
+import type { TrackerTaskOption } from "@/data/tracker/tracker";
+import { trackerFrequency } from "@/server/db/schema";
+import {
+  FormSchemaCreateNewTracker,
+  defaultTrackerRange,
+  trackerFormOptions,
+} from "@/shared/tracker";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,21 +39,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-import { toast } from "@/hooks/use-toast";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -48,29 +47,30 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { trackerFrequency } from "@/server/db/schema";
-import Link from "next/link";
-import { createNewTracker } from "@/actions/trackers";
-import { addDays, format } from "date-fns";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar } from "../ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { TaskPicker } from "@/components/trackers/TaskPicker";
 
+export interface DialogDrawerFrameHandle {
+  toggleVisibility: () => void;
+}
 
-export type OptionType = "Reference Already Existing One" | "Create New And Track"
-export const trackerFormOptionValue = ["Create New And Track", "Reference Already Existing One"] as const
-
-// Define a type for the props
 interface DialogDrawerFrameProps {
   label: string;
   description: string;
   children: React.ReactNode;
-}
-
-// Define a type for the ref
-export interface DialogDrawerFrameHandle {
-  // Define methods or properties that can be accessed via ref
-  toggleVisibility: () => void;
 }
 
 export const DialogDrawerFrame = React.forwardRef<
@@ -81,24 +81,28 @@ export const DialogDrawerFrame = React.forwardRef<
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const toggleVisibility = () => {
-    setOpen(!open);
+    setOpen((prev) => !prev);
   };
 
-  React.useImperativeHandle(ref, () => {
-    return {
-      toggleVisibility,
-    };
-  });
+  React.useImperativeHandle(ref, () => ({
+    toggleVisibility,
+  }));
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline">{label}</Button>
+          <Button variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" />
+            {label}
+          </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{label}</DialogTitle>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="h-5 w-5 text-primary" />
+              {label}
+            </DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           {children}
@@ -110,11 +114,17 @@ export const DialogDrawerFrame = React.forwardRef<
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline">{label}</Button>
+        <Button variant="outline" className="gap-2">
+          <Plus className="h-4 w-4" />
+          {label}
+        </Button>
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="text-left">
-          <DrawerTitle>{label}</DrawerTitle>
+          <DrawerTitle className="flex items-center gap-2 text-xl">
+            <Sparkles className="h-5 w-5 text-primary" />
+            {label}
+          </DrawerTitle>
           <DrawerDescription>{description}</DrawerDescription>
         </DrawerHeader>
         <div className="px-4">{children}</div>
@@ -127,275 +137,197 @@ export const DialogDrawerFrame = React.forwardRef<
     </Drawer>
   );
 });
+DialogDrawerFrame.displayName = "DialogDrawerFrame";
 
-function startOfToday() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
+type TrackerFormProps = {
+  taskOptions: TrackerTaskOption[];
+  closeFunc: () => void;
+  className?: string;
+};
 
-function endOfDayOneYearFromToday() {
-  const today = new Date();
-  const oneYearFromToday = new Date(
-    today.getFullYear() + 1,
-    today.getMonth(),
-    today.getDate(),
-  );
-  return new Date(
-    oneYearFromToday.getFullYear(),
-    oneYearFromToday.getMonth(),
-    oneYearFromToday.getDate(),
-    23,
-    59,
-    59,
-    999,
-  );
-}
-
-function getEndOfLastMomentOfDateSevenDaysFromToday() {
-  const today = new Date();
-  const sevenDaysFromToday = new Date(today);
-
-  // Move the date forward by 6 days
-  sevenDaysFromToday.setDate(today.getDate() + 6);
-
-  // Set time to the last moment of that day
-  sevenDaysFromToday.setHours(23, 59, 59, 999);
-
-  return sevenDaysFromToday;
-}
-
-function normalizeStartOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function normalizeEndOfDay(date: Date) {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    23,
-    59,
-    59,
-    999,
-  );
-}
-
-function isAtLeastOneWeekApart(fromDate: Date, toDate: Date) {
-  // Normalize dates
-  const startOfFromDate = normalizeStartOfDay(fromDate);
-  const endOfToDate = normalizeEndOfDay(toDate);
-
-  // Calculate the difference in milliseconds
-  const differenceInMillis = endOfToDate.getTime() - startOfFromDate.getTime();
-
-  // Convert milliseconds to days
-  const differenceInDays = differenceInMillis / (1000 * 60 * 60 * 24);
-  console.log('differenceInDays is ', differenceInDays)
-
-  // Check if the difference is at least a week (7 days)
-  return differenceInDays >= 7;
-}
-
-export const FormSchemaCreateNewTracker = z.object({
-  title: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-  frequency: z.enum(trackerFrequency.enumValues),
-  // startOn: z.date({
-  //   required_error: "StartOn date must be specified."
-  // }),
-  // endOn: z.date({
-  //   required_error: "EndOn date must be specified."
-  // }),
-  range: z
-    .object({
-      from: z.date({ required_error: "Start date is required." }),
-      to: z.date({ required_error: "End date is required." }),
-    })
-    .refine(
-      (data) => data.from >= startOfToday(),
-      "Start date must be today or days from today in future.",
-    )
-    .refine(
-      (date) => date.to <= endOfDayOneYearFromToday(),
-      "End day must be maximum one year from today",
-    )
-    .refine(
-      (date) => isAtLeastOneWeekApart(date.from, date.to),
-      "difference between two date must be atleast a week.",
-    ),
-    taskIdEff: z.enum(trackerFormOptionValue, {required_error: "Not in option/rule."}),
-    taskId: z.string().optional(),
-    taskTitle: z.string().optional(),
-  remark: z.string().optional(),
-}).refine((data) => {
-  if (data.taskIdEff === "Create New And Track") {
-    return (data.taskTitle && (data.taskTitle.length > 3))
-  } else {
-    return !!data.taskId
-  }
-}, {message: "Once selected option, condition should be fulfilled."});
-
-export type formdataCreateNewTracker = z.infer<
-  typeof FormSchemaCreateNewTracker
->;
-
-export function TrackerForm({ closeFunc, className }: { closeFunc: () => void, className: string }) {
+export function TrackerForm({
+  closeFunc,
+  className,
+  taskOptions,
+}: TrackerFormProps) {
   const [isPending, startTransition] = React.useTransition();
-  const [isTaskIdMode, setTaskIdMode] = React.useState(false);
   const form = useForm<z.infer<typeof FormSchemaCreateNewTracker>>({
     resolver: zodResolver(FormSchemaCreateNewTracker),
     defaultValues: {
       title: "",
+      description: "",
       frequency: "Daily",
-      range: {
-        from: startOfToday(),
-        to: getEndOfLastMomentOfDateSevenDaysFromToday(),
-      },
+      linkMode: "create-task",
+      existingTaskIds: [],
+      range: defaultTrackerRange(),
     },
   });
-  const handleEventTypeChange = (selectedType: OptionType) => {
-    setTaskIdMode(selectedType === "Reference Already Existing One");
-  };
 
-  function onSubmit(data: z.infer<typeof FormSchemaCreateNewTracker>) {
+  const linkMode = useWatch({
+    control: form.control,
+    name: "linkMode",
+  });
+
+  React.useEffect(() => {
+    if (linkMode === "tracker-only") {
+      form.setValue("existingTaskIds", []);
+      form.setValue("newTaskTitle", undefined);
+    }
+    if (linkMode === "link-existing") {
+      form.setValue("newTaskTitle", undefined);
+    }
+    if (linkMode === "create-task") {
+      form.setValue("existingTaskIds", []);
+    }
+  }, [linkMode, form]);
+
+  const handleSubmit = (data: z.infer<typeof FormSchemaCreateNewTracker>) => {
     startTransition(async () => {
-      await createNewTracker(data)
-        .then((message) => console.log("message is ", message))
-        .catch((error) => {
-          console.log("error ", error);
+      const payload = {
+        ...data,
+        existingTaskIds:
+          data.linkMode === "link-existing" || data.linkMode === "mixed"
+            ? data.existingTaskIds ?? []
+            : [],
+        newTaskTitle:
+          data.linkMode === "create-task" || data.linkMode === "mixed"
+            ? data.newTaskTitle
+            : undefined,
+      };
+
+      const res = await createNewTracker(payload);
+      if (res?.error) {
+        toast({
+          title: "Could not save tracker",
+          description: res.error,
+          variant: "destructive",
         });
+        return;
+      }
+
+      toast({
+        title: "Tracker saved",
+        description: "We linked tasks and refreshed your workspace.",
+      });
+      form.reset({
+        title: "",
+        description: "",
+        frequency: "Daily",
+        linkMode: "create-task",
+        existingTaskIds: [],
+        range: defaultTrackerRange(),
+        newTaskTitle: "",
+        remark: "",
+      });
+      closeFunc();
     });
-    closeFunc();
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-  }
-
-
-
-
+  };
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className={cn("w-2/3 space-y-6", className)}
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className={cn("space-y-4", className)}
       >
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>, 
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="shadcn" {...field} />
-              </FormControl>
-              <FormDescription>This is title for your tracker.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="frequency"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Frequency</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tracker title</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a suitable frequency." />
-                  </SelectTrigger>
+                  <Input placeholder="Morning routine, release follow-up..." {...field} />
                 </FormControl>
-                <SelectContent>
-                  {/* "Yearly", "HalfYearly", "Quarterly", "Monthly", "Weekly", "Daily"]> */}
-                  <SelectItem value="Daily">Daily</SelectItem>
-                  <SelectItem value="Weekly" disabled>Weekly</SelectItem>
-                  <SelectItem value="Montly" disabled>Monthly</SelectItem>
-                  <SelectItem value="Yearly" disabled>Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                You can later change the values later. Experimental, try Daily
-                for now.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="taskIdEff"
-          render={({field}) => (
-  <FormItem>
-              <FormLabel>Select one option</FormLabel>
-              <Select onValueChange={(value) => {
-                  field.onChange(value);
-                  handleEventTypeChange(value as OptionType);
-                }} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select one approate option to continue." />
-                  </SelectTrigger>
-                </FormControl>
+                <FormDescription>
+                  Keep it actionable and unique.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                <SelectContent>
-                  {trackerFormOptionValue.map(x => 
-                    <SelectItem value={x} key={x}>{x}</SelectItem>
-                  )}
-                  {/* <SelectItem value="m@example.com"></SelectItem>
-                  <SelectItem value="m@google.com">m@google.com</SelectItem>
-                  <SelectItem value="m@support.com">m@support.com</SelectItem> */}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Form will be customized on the basis of this value.
-                {/* <Link href="/examples/forms">email settings</Link>. */}
-              </FormDescription>
+          <FormField
+            control={form.control}
+            name="frequency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Frequency</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select cadence" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {trackerFrequency.enumValues.map((freq) => (
+                      <SelectItem key={freq} value={freq}>
+                        {freq}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>How often this tracker expects activity.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <textarea
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Context, definition of done, or notes."
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="range"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Select Period</FormLabel>
-              <FormControl>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="range"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Tracking window</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value?.from ? (
-                        field.value.to ? (
-                          <>
-                            {format(field.value.from, "LLL dd, y")} -{" "}
-                            {format(field.value.to, "LLL dd, y")}
-                          </>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value?.from ? (
+                          field.value.to ? (
+                            <>
+                              {format(field.value.from, "LLL dd, y")} -{" "}
+                              {format(field.value.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(field.value.from, "LLL dd, y")
+                          )
                         ) : (
-                          format(field.value.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
+                          <span>Pick a date range</span>
+                        )}
+                      </Button>
+                    </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
-                      // initialFocus
                       mode="range"
                       defaultMonth={field.value?.from}
                       selected={field.value}
@@ -404,50 +336,89 @@ export function TrackerForm({ closeFunc, className }: { closeFunc: () => void, c
                     />
                   </PopoverContent>
                 </Popover>
-              </FormControl>
-              <FormDescription>
-                Select the duration of event happening.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {!!!isTaskIdMode && (
+                <FormDescription>
+                  Start and end dates drive status and due reminders.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
-            name="taskTitle"
+            name="linkMode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name for tracking task</FormLabel>
+                <FormLabel>Task strategy</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose how to link tasks" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {trackerFormOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Create a fresh task, link existing, or keep it standalone.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {(linkMode === "create-task" || linkMode === "mixed") && (
+          <FormField
+            control={form.control}
+            name="newTaskTitle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>New task to track</FormLabel>
                 <FormControl>
-                  <Input placeholder="70909t9qre98" {...field} />
+                  <Input placeholder="Ship beta build, write spec..." {...field} />
                 </FormControl>
                 <FormDescription>
-                  This is name for new task you want to start track.
+                  We create the task in your GENERAL category and link it here.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         )}
-        {!!isTaskIdMode && (
+
+        {(linkMode === "link-existing" || linkMode === "mixed") && (
           <FormField
             control={form.control}
-            name="taskId"
+            name="existingTaskIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Task Id</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Attach existing tasks</FormLabel>
+                  <Badge variant="secondary">{field.value?.length ?? 0} selected</Badge>
+                </div>
                 <FormControl>
-                  <Input placeholder="70909t9qre98" {...field} />
+                  <TaskPicker
+                    options={taskOptions}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    emptyLabel="No tasks found for this workspace."
+                  />
                 </FormControl>
                 <FormDescription>
-                  This is id of task you want to track.
+                  Attach multiple tasks. We will sync trackers to the task board.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         )}
+
         <FormField
           control={form.control}
           name="remark"
@@ -455,33 +426,66 @@ export function TrackerForm({ closeFunc, className }: { closeFunc: () => void, c
             <FormItem>
               <FormLabel>Remark</FormLabel>
               <FormControl>
-                <Input placeholder="Id specify dog walking task" {...field} />
+                <Input placeholder="Optional reminder or context" {...field} />
               </FormControl>
-              <FormDescription>
-                This is remark for your tracker.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending}>
-          Submit
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={isPending} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            {isPending ? "Saving..." : "Save tracker"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+            onClick={() => form.reset({ ...form.getValues(), range: defaultTrackerRange() })}
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Reset dates
+          </Button>
+        </div>
       </form>
     </Form>
   );
 }
 
-export const AddNewTracker = ({className}: {className: string}) => {
+export const AddNewTracker = ({
+  taskOptions,
+  className,
+}: {
+  taskOptions: TrackerTaskOption[];
+  className?: string;
+}) => {
   const dialogRef = React.useRef<DialogDrawerFrameHandle>(null);
   return (
-    <div>
+    <div className={className}>
       <DialogDrawerFrame
-        label={"Add New Tracker"}
-        description="Complete this to create new Drawer."
+        label={"Add Tracker"}
+        description="Create or link tasks to start tracking."
         ref={dialogRef}
       >
-        <TrackerForm closeFunc={() => dialogRef.current?.toggleVisibility()} className={className} />
+        <div className="space-y-4 rounded-lg bg-muted/40 p-2">
+          <div className="rounded-md bg-background px-3 py-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 font-medium text-foreground">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              Planner + tracker + task links
+            </div>
+            <p>
+              We create a tracker, optionally add a task, and wire it to the board so status
+              changes stay in sync.
+            </p>
+          </div>
+          <TrackerForm
+            className="max-h-[70vh] overflow-y-auto pr-2"
+            closeFunc={() => dialogRef.current?.toggleVisibility()}
+            taskOptions={taskOptions}
+          />
+        </div>
       </DialogDrawerFrame>
     </div>
   );

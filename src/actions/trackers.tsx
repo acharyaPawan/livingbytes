@@ -1,122 +1,243 @@
-"use server"
+"use server";
 
-import { FormSchemaCreateNewTracker } from "./../shared/tracker"
-import { getServerAuthSession } from "@/server/auth"
-import db from "@/server/db"
-import { categories, tasks, tasksToTrackers, trackers } from "@/server/db/schema"
-import { endOfToday, startOfToday } from "date-fns"
+import { endOfDay, startOfDay } from "date-fns";
+import { and, eq, inArray } from "drizzle-orm";
+import { ZodError, z } from "zod";
 
-import { ZodError, z } from "zod"
-import { revalidateTagsAction } from "./utils"
-import { PRIORITYENUM } from "@/app/constants"
+import { getServerAuthSession } from "@/server/auth";
+import db from "@/server/db";
+import {
+  categories,
+  tasks,
+  tasksToTrackers,
+  trackerStatus,
+  trackers,
+} from "@/server/db/schema";
 
-const MODERATE_TASK_PRIORITY_VALUE: number = 60
+import { FormSchemaCreateNewTracker } from "@/shared/tracker";
+import { revalidateTagsAction } from "./utils";
 
+const MODERATE_TASK_PRIORITY_VALUE = 60;
 
-type formdataCreateNewTracker = z.infer<
-typeof FormSchemaCreateNewTracker
->;
+type formdataCreateNewTracker = z.infer<typeof FormSchemaCreateNewTracker>;
 
+const getDefaultCategoryId = async (userId: string, tx = db) => {
+  const existing = await tx.query.categories.findFirst({
+    where: (categories, { and, eq }) =>
+      and(eq(categories.userId, userId), eq(categories.title, "GENERAL")),
+  });
+
+  if (existing?.id) return existing.id;
+
+  const [insertedCategory] = await tx
+    .insert(categories)
+    .values({
+      title: "GENERAL",
+      userId,
+    })
+    .returning({ id: categories.id });
+
+  if (!insertedCategory) {
+    throw new Error("Failed to create default category for user.");
+  }
+
+  return insertedCategory.id;
+};
+
+const computeTrackerStatus = (startOn: Date) => {
+  const todayStart = startOfDay(new Date());
+  return startOn > todayStart ? "Not Started Yet" : "In Progress";
+};
+
+const sanitizeTaskIds = (ids: string[] = []) => Array.from(new Set(ids));
 
 export async function createNewTracker(values: formdataCreateNewTracker) {
   try {
-    const session = await getServerAuthSession()
+    const session = await getServerAuthSession();
     if (!session) {
       return {
-        error: "Not authenticated."
-      }
+        error: "Not authenticated.",
+      };
     }
 
-    const validationResult = FormSchemaCreateNewTracker.parse(values)
- 
+    const input = FormSchemaCreateNewTracker.parse(values);
+    const userId = session.user.id;
 
     await db.transaction(async (tx) => {
-      console.log("Here")
-      if (validationResult.taskIdEff === "Reference Already Existing One") {
-        const res = await tx.query.tasks.findFirst({
-          where: (tasks, {and, eq, ne, lte}) =>  and(eq(tasks.id, validationResult.taskId ?? ""), ne(tasks.status, "Expired"), lte(tasks.expiresOn,  endOfToday()))
+      const status = computeTrackerStatus(input.range.from);
+
+      const [createdTracker] = await tx
+        .insert(trackers)
+        .values({
+          title: input.title,
+          description: input.description,
+          frequency: input.frequency,
+          status,
+          userId,
+          startOn: input.range.from,
+          endOn: input.range.to,
+          remark: input.remark,
         })
-        if (!res) {
-          throw new Error("Referenced task not found.");
-        }
-        throw new Error("Under development.");
+        .returning({ id: trackers.id });
+
+      if (!createdTracker) {
+        throw new Error("Unable to create tracker.");
       }
 
-      let categoryId = await tx.query.categories.findFirst({
-        where: (categories, {and, eq}) => and(eq(categories.userId, session.user.id), eq(categories.title, "GENERAL"))
-      }).then((res) => res?.id)
+      const taskIdsToLink: string[] = [];
 
-      if (!categoryId) {
-      const [insertedCategory] = await tx.insert(categories).values({
-        'title': 'GENERAL', 
-        'userId': session.user.id,
-      }).returning({
-        id: categories.id
-      })
+      // Optionally create a new task and link
+      if (input.newTaskTitle) {
+        const categoryId = await getDefaultCategoryId(userId, tx);
+        const taskStatus = input.range.from > new Date() ? "Scheduled" : "Not Started";
+        const [addedTask] = await tx
+          .insert(tasks)
+          .values({
+            categoryId,
+            expiresOn: endOfDay(input.range.to),
+            effectiveOn: input.range.from,
+            title: input.newTaskTitle.trim(),
+            user_order: String(MODERATE_TASK_PRIORITY_VALUE),
+            userId,
+            status: taskStatus,
+            priorityLabel: "Moderate",
+          })
+          .returning({ id: tasks.id });
 
-      if (!insertedCategory) {
-        throw new Error("DBERROR: Insert operation for default category failed.");
-      }
-      categoryId = insertedCategory.id;
-    }
-
-      if (validationResult.taskIdEff === "Create New And Track") {
-        const [addedTask] = await tx.insert(tasks).values({
-          categoryId: categoryId,
-          expiresOn: endOfToday(),
-          title: validationResult.taskTitle ?? "",
-          user_order: String(MODERATE_TASK_PRIORITY_VALUE),
-          userId: session.user.id,
-        }).returning({
-          id: tasks.id
-        })
         if (!addedTask) {
-          throw new Error("Can't add task.")
+          throw new Error("Unable to create task for tracker.");
         }
 
-        const [addedTracker] = await tx.insert(trackers).values({
-          // followUpDate: startOfToday(),
-          title: validationResult.title ?? "",
-          userId: session.user.id,
-          frequency: validationResult.frequency,
-          startOn: validationResult.range.from,
-          remark: validationResult.remark,
-          endOn: validationResult.range.to
-        }).returning({
-          id: trackers.id
-        })
+        taskIdsToLink.push(addedTask.id);
+      }
 
-        if (!addedTracker) {
-          throw new Error("Can't add tracker.")
-        }
+      // Link existing tasks
+      if (input.existingTaskIds?.length) {
+        const uniqueTaskIds = sanitizeTaskIds(input.existingTaskIds);
+        const validTasks = await tx
+          .select({ id: tasks.id })
+          .from(tasks)
+          .where(
+            and(eq(tasks.userId, userId), inArray(tasks.id, uniqueTaskIds)),
+          );
 
-        const [res] = await tx.insert(tasksToTrackers).values(
-          {
-            taskId: addedTask.id,
-            trackerId: addedTracker.id
-          }
-        ).returning()
+        taskIdsToLink.push(...validTasks.map((task) => task.id));
+      }
 
-        if (!res) {
-          throw new Error("Can't create mapping.")
-        }
+      if (taskIdsToLink.length) {
+        await tx.insert(tasksToTrackers).values(
+          taskIdsToLink.map((taskId) => ({
+            taskId,
+            trackerId: createdTracker.id,
+          })),
+        );
       }
     });
 
-    await revalidateTagsAction(["all-tasks", "cached-tracker-data", `all-tasks-${session.user.id}`])
+    await revalidateTagsAction([
+      "cached-tracker-data",
+      `tracker-list-${session.user.id}`,
+      `all-tasks-${session.user.id}`,
+    ]);
 
     return {
-      success: "yep"
-    }
+      success: "Tracker saved.",
+    };
   } catch (e) {
-    console.log("Tracker error: ", e)
+    console.log("Tracker error: ", e);
     if (e instanceof ZodError) {
       return {
-        error: "Validation Error"
-      }
+        error: "Validation Error",
+      };
     }
     return {
-      error: "Server Error"
+      error: "Server Error",
+    };
+  }
+}
+
+export async function updateTrackerStatus(
+  trackerId: string,
+  nextStatus: (typeof trackerStatus.enumValues)[number],
+) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session) {
+      return { error: "Not authenticated." };
     }
+
+    const userId = session.user.id;
+
+    await db
+      .update(trackers)
+      .set({ status: nextStatus })
+      .where(and(eq(trackers.id, trackerId), eq(trackers.userId, userId)));
+
+    await revalidateTagsAction([
+      "cached-tracker-data",
+      `tracker-list-${userId}`,
+      `all-tasks-${userId}`,
+    ]);
+
+    return { success: "Tracker updated." };
+  } catch (e) {
+    console.log("Tracker status error: ", e);
+    return { error: "Server Error" };
+  }
+}
+
+export async function replaceTrackerTasks(
+  trackerId: string,
+  taskIds: string[],
+) {
+  try {
+    const session = await getServerAuthSession();
+    if (!session) {
+      return { error: "Not authenticated." };
+    }
+
+    const userId = session.user.id;
+    const uniqueTaskIds = sanitizeTaskIds(taskIds);
+
+    await db.transaction(async (tx) => {
+      const tracker = await tx.query.trackers.findFirst({
+        where: (tracker, { and, eq }) =>
+          and(eq(tracker.id, trackerId), eq(tracker.userId, userId)),
+        columns: { id: true },
+      });
+
+      if (!tracker) {
+        throw new Error("Tracker not found.");
+      }
+
+      const validTasks = await tx
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(and(eq(tasks.userId, userId), inArray(tasks.id, uniqueTaskIds)));
+
+      await tx
+        .delete(tasksToTrackers)
+        .where(eq(tasksToTrackers.trackerId, trackerId));
+
+      if (validTasks.length) {
+        await tx.insert(tasksToTrackers).values(
+          validTasks.map((task) => ({
+            taskId: task.id,
+            trackerId,
+          })),
+        );
+      }
+    });
+
+    await revalidateTagsAction([
+      "cached-tracker-data",
+      `tracker-list-${userId}`,
+      `all-tasks-${userId}`,
+    ]);
+
+    return { success: "Tracker tasks refreshed." };
+  } catch (e) {
+    console.log("Replace tracker tasks error: ", e);
+    return { error: "Server Error" };
   }
 }

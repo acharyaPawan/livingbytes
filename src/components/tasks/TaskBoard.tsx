@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlarmClock,
@@ -12,6 +13,7 @@ import {
   Clock3,
   Flag,
   LayoutGrid,
+  Link2,
   List,
   Pause,
   Play,
@@ -536,14 +538,34 @@ const TaskCard = ({ task }: { task: TaskCardData }) => {
         </div>
       )}
       {task.trackers && task.trackers.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">Trackers:</span>
-          {task.trackers.map((tracker) => (
-            <Badge key={tracker?.id} variant="outline" className="gap-1">
-              <Clock3 className="h-3 w-3" />
-              {tracker?.title}
-            </Badge>
-          ))}
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">Trackers</span>
+            <Button asChild size="sm" variant="ghost" className="gap-1 px-2 py-0 text-[11px]">
+              <Link href="/trackers">
+                <Link2 className="h-3 w-3" />
+                Open board
+              </Link>
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {task.trackers.map((tracker) => (
+              <Badge key={tracker?.id} variant="outline" className="gap-1">
+                <Clock3 className="h-3 w-3" />
+                {tracker?.title}
+                {tracker?.status && (
+                  <span className="rounded-full bg-muted px-1 text-[10px] text-foreground">
+                    {tracker.status}
+                  </span>
+                )}
+                {tracker?.frequency && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {tracker.frequency}
+                  </span>
+                )}
+              </Badge>
+            ))}
+          </div>
         </div>
       )}
       {task.remark && (
