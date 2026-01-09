@@ -107,6 +107,9 @@ export async function createNewTask(
       }
 
     // Can't create new 
+    const nextStatus: TaskStatus =
+      values.scheduled && values.scheduledOn ? "Scheduled" : "Not Started";
+
     const insertValueTask: InferInsertModel<typeof tasks> = {
       userId: session.user.id,
       title: values.title,
@@ -114,11 +117,14 @@ export async function createNewTask(
       expiresOn: values.expiresOn,
       viewAs: values.viewAs,
       priorityLabel: values.priority,
-    }
-    if (values.scheduledOn) insertValueTask['effectiveOn'] = values.scheduledOn
-    if (values.description) insertValueTask['description'] = values.description
-    if (values.remark) insertValueTask['remark'] = values.remark
-    await db.insert(tasks).values(insertValueTask)
+      status: nextStatus,
+      scheduled: values.scheduled,
+    };
+    if (values.scheduledOn) insertValueTask.effectiveOn = values.scheduledOn;
+    if (values.description) insertValueTask.description = values.description;
+    if (values.remark) insertValueTask.remark = values.remark;
+
+    await db.insert(tasks).values(insertValueTask);
     revalidateTag(`all-tasks-${session.user.id}`, "max");
     return {
       data: `Successfully created ${values.title}`
@@ -209,6 +215,9 @@ export async function createNewSubtask(
       }
 
     // Can't create new 
+    const nextStatus: TaskStatus =
+      values.scheduled && values.scheduledOn ? "Scheduled" : "Not Started";
+
     const insertValueTask: InferInsertModel<typeof subtasks> = {
       taskId: task.id,
       userId: session.user.id,
@@ -217,11 +226,12 @@ export async function createNewSubtask(
       expiresOn: values.expiresOn,
       viewAs: values.viewAs,
       priorityLabel: values.priority,
-    }
-    if (values.scheduledOn) insertValueTask['effectiveOn'] = values.scheduledOn
-    if (values.description) insertValueTask['description'] = values.description
-    if (values.remark) insertValueTask['remark'] = values.remark
-    await db.insert(subtasks).values(insertValueTask)
+      status: nextStatus,
+    };
+    if (values.scheduledOn) insertValueTask.effectiveOn = values.scheduledOn;
+    if (values.description) insertValueTask.description = values.description;
+    if (values.remark) insertValueTask.remark = values.remark;
+    await db.insert(subtasks).values(insertValueTask);
     revalidatePath(`/tasks`);
     // revalidateTag(`all-tasks-${session.user.id}`);
     return {
@@ -495,12 +505,12 @@ export async function updateStatus(
             statusStr = "Expired";
           }
         }
-        await tx
-          .update(tasks)
-          .set({
-            status: statusStr,
-          })
-          .where(eq(tasks.id, taskId));
+        const nextFields: Partial<InferInsertModel<typeof tasks>> = {
+          status: statusStr,
+          scheduled: statusStr === "Scheduled",
+        };
+
+        await tx.update(tasks).set(nextFields).where(eq(tasks.id, taskId));
       });
     } catch (e) {
       return {
