@@ -7,8 +7,13 @@ type Params = {
   journalId: string;
 };
 
-const JournalDetailPage = async ({ params }: { params: Params }) => {
-  const entry = await getJournalEntry(params.journalId).catch(() => null);
+const JournalDetailPage = async ({
+  params,
+}: {
+  params: Promise<Params>;
+}) => {
+  const { journalId } = await params;
+  const entry = await getJournalEntry(journalId).catch(() => null);
 
   if (!entry) {
     notFound();
