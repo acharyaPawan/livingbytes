@@ -126,84 +126,46 @@ export function AddNewForm({
       viewAs: "Checkbox",
       category: "Not Specified",
       expiresOn: new Date(new Date().setHours(23, 59, 59, 999)),
-      scheduledOn: new Date(new Date().setHours(25, 0, 0, 0)),
+      scheduledOn: undefined,
     },
   });
 
   // 2. Define a submit handler.
- function onSubmit(values: z.infer<typeof formSchemaAddNewTask>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log("In onsubmit")
-    startTransition(async () => {
-      if (!subtask?.taskId) {
-        console.log("here")
-        const response = await createNewTask(values);
-        if (response.data) {
-          toast({
-            title: "Success",
-            description: "Task created successfully.",
-          });
-        } else {
-            toast({
-            title: "Error",
-            description: "Task creation failed.",
-            variant: "destructive",
-            });
-        }
-        // if (values.scheduled && values.scheduledOn) {
-        //   await revalidateTagsAction(['scheduled-task-today', 'all-tasks'])
-        //   console.log("send req to revalidate scheduled and all tasks")
-        // } else {
-        //   console.log("send req to all tasks")
-        // }
-        //error management to bo done.
+function onSubmit(values: z.infer<typeof formSchemaAddNewTask>) {
+  startTransition(async () => {
+    if (!subtask?.taskId) {
+      const response = await createNewTask(values);
+      if (response.data) {
+        toast({
+          title: "Task created",
+          description: "The task is ready on your board.",
+        });
       } else {
-        const response = await createNewSubtask(values, subtask.taskId);
-        if (response.data) {
-          toast({
-            title: "Success",
-            description: "Subtask created successfully.",
-          });
-        } else {
-            toast({
-            title: "Error",
-            description: "Subtask creation failed.",
-            variant: "destructive",
-            });
-            }
-        // if (values.scheduled && values.scheduledOn) {
-        //   if (values.scheduledOn <= values.expiresOn) {
-        //     form.setError("scheduled", {message: "scheduled datetime is earlier than expiresOn"})
-        //   }
-        //   await revalidateTagsAction(['scheduled-subtask-today', 'all-tasks'])
-        //   console.log("send req to revalidate scheduled and all tasks")
-
-        // } else {
-          // if (new Date() <= values.expiresOn) {
-          //   form.setError("scheduled", {message: "expiry datetime is earlier than present datetime."})
-          // }
-          // console.log("send req to revalidate all tasks")
-
-        // await revalidateTagsAction([ 'all-tasks'])
-        // }
+        toast({
+          title: "Task creation failed",
+          description: response.error ?? "Something went wrong while saving.",
+          variant: "destructive",
+        });
       }
-      closeFun();
-      // await revalidatePathAction(["tasks2"])
-      // router.refresh();
-    });
-    // await revalidatePath("/tak")
-
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      ),
-    });
-    console.log(values);
-  }
+    } else {
+      const response = await createNewSubtask(values, subtask.taskId);
+      if (response.data) {
+        toast({
+          title: "Subtask created",
+          description: "We added it under the parent task.",
+        });
+      } else {
+        toast({
+          title: "Subtask creation failed",
+          description: response.error ?? "Could not save subtask.",
+          variant: "destructive",
+        });
+      }
+    }
+    closeFun();
+    router.refresh();
+  });
+}
 
   const [timeValue, setTimeValue] = useState<string>("00:00");
   const [scheduledTimeValue, setScheduledTimeValue] = useState<string>("00:00");
@@ -527,7 +489,7 @@ export function AddNewForm({
             name="scheduledOn"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Expires On(value) </FormLabel>
+                <FormLabel>Schedule on</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>

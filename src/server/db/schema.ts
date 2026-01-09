@@ -65,11 +65,6 @@ export const user = pgTable(
   },
 );
 
-export const usersRelations = relations(user, ({ many }) => ({
-  journals: many(journals),
-  tasks: many(tasks),
-}));
-
 export const session = pgTable("session", {
   sessionToken: text("sessionToken").primaryKey().notNull(),
   userId: text("userId")
@@ -97,11 +92,6 @@ export const categories = pgTable("categories", {
   titleIdx: index().onOnly(table.title),
 }))
 
-export const categoriesRelation = relations(categories, ({ many }) => ({
-  tasks: many(tasks),
-  subtasks: many(subtasks),
-}));
-
 export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade",}).notNull(),
@@ -128,26 +118,6 @@ effectiveOn: timestamp("effective_on").notNull().defaultNow(),
   updatedOn: timestamp("updated_on"),
 });
 
-export const tasksRelations = relations(tasks, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [tasks.categoryId],
-    references: [categories.id],
-  }),
-  trackersTasksMap: many(tasksToTrackers),
-  // subtasks: many(subtasks),
-  user: one(user, {
-    fields: [tasks.userId],
-    references: [user.id],
-  }),
-  parentTask: one(tasks, {
-    fields: [tasks.parentId],
-    references: [tasks.id],
-    relationName: "subtasks",
-  }),
-  subtasks: many(tasks, {
-    relationName: "subtasks"})
-}));
-
 export const trackers = pgTable("trackers", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -168,29 +138,11 @@ export const trackers = pgTable("trackers", {
   createdOn: timestamp("created_on").defaultNow(),
 });
 
-export const trackerRelation = relations(trackers, ({ many }) => ({
-  tasks: many(tasksToTrackers),
-}));
-
 // junction table
 export const tasksToTrackers = pgTable("tasks_to_trackers", {
   taskId: uuid("task_id").references(() => tasks.id),
   trackerId: uuid("tracker_id").references(() => trackers.id),
 });
-
-export const tasksToTrackersRelations = relations(
-  tasksToTrackers,
-  ({ one }) => ({
-    task: one(tasks, {
-      fields: [tasksToTrackers.taskId],
-      references: [tasks.id],
-    }),
-    tracker: one(trackers, {
-      fields: [tasksToTrackers.trackerId],
-      references: [trackers.id],
-    }),
-  }),
-);
 
 export const subtasks = pgTable("subtasks", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
@@ -218,17 +170,6 @@ export const subtasks = pgTable("subtasks", {
   completedOn: timestamp("completed_on"),
   updatedOn: timestamp("updated_on"),
 });
-
-export const subtasksRelations = relations(subtasks, ({ one }) => ({
-  task: one(tasks, {
-    fields: [subtasks.taskId],
-    references: [tasks.id],
-  }),
-  category: one(categories, {
-    fields: [subtasks.categoryId],
-    references: [categories.id],
-  }),
-}));
 
 export const schedules = pgTable(
   "schedules",
@@ -277,16 +218,6 @@ export const singleDayEvents = pgTable(
   },
 );
 
-export const singleDayEventsRelations = relations(
-  singleDayEvents,
-  ({ one }) => ({
-    event: one(events, {
-      fields: [singleDayEvents.eventId],
-      references: [events.id],
-    }),
-  }),
-);
-
 export const events = pgTable(
   "events",
   {
@@ -311,11 +242,6 @@ export const events = pgTable(
   },
 );
 
-export const eventsRelations = relations(events, ({ one }) => ({
-  singleDayEvent: one(singleDayEvents),
-  rangeEvent: one(rangeEvents),
-}));
-
 export const rangeEvents = pgTable("range_events", {
   rangeId: uuid("range_id").defaultRandom().primaryKey().notNull(),
   eventId: uuid("event_id")
@@ -324,13 +250,6 @@ export const rangeEvents = pgTable("range_events", {
   startDate: date("start_date", { mode: "date" }).notNull(),
   endDate: date("end_date", { mode: "date" }).notNull(),
 });
-
-export const rangeEventsRelations = relations(rangeEvents, ({ one }) => ({
-  event: one(events, {
-    fields: [rangeEvents.eventId],
-    references: [events.id],
-  }),
-}));
 
 export const verificationToken = pgTable(
   "verificationToken",
@@ -393,9 +312,99 @@ export const journals = pgTable(
   }),
 );
 
-export const journalRelation = relations(journals, ({ one }) => ({
+// Relations
+export const usersRelations = relations(user, ({ many }) => ({
+  journals: many(journals),
+  tasks: many(tasks),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  tasks: many(tasks),
+  subtasks: many(subtasks),
+}));
+
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [tasks.categoryId],
+    references: [categories.id],
+  }),
+  trackersTasksMap: many(tasksToTrackers),
+  user: one(user, {
+    fields: [tasks.userId],
+    references: [user.id],
+  }),
+  parentTask: one(tasks, {
+    fields: [tasks.parentId],
+    references: [tasks.id],
+    relationName: "taskHierarchy",
+  }),
+  childTasks: many(tasks, { relationName: "taskHierarchy" }),
+  subtasks: many(subtasks),
+}));
+
+export const trackerRelations = relations(trackers, ({ many, one }) => ({
+  tasks: many(tasksToTrackers),
+  user: one(user, {
+    fields: [trackers.userId],
+    references: [user.id],
+  }),
+}));
+
+export const tasksToTrackersRelations = relations(
+  tasksToTrackers,
+  ({ one }) => ({
+    task: one(tasks, {
+      fields: [tasksToTrackers.taskId],
+      references: [tasks.id],
+    }),
+    tracker: one(trackers, {
+      fields: [tasksToTrackers.trackerId],
+      references: [trackers.id],
+    }),
+  }),
+);
+
+export const subtasksRelations = relations(subtasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [subtasks.taskId],
+    references: [tasks.id],
+  }),
+  category: one(categories, {
+    fields: [subtasks.categoryId],
+    references: [categories.id],
+  }),
+  user: one(user, {
+    fields: [subtasks.userId],
+    references: [user.id],
+  }),
+}));
+
+export const singleDayEventsRelations = relations(
+  singleDayEvents,
+  ({ one }) => ({
+    event: one(events, {
+      fields: [singleDayEvents.eventId],
+      references: [events.id],
+    }),
+  }),
+);
+
+export const eventsRelations = relations(events, ({ one }) => ({
+  singleDayEvent: one(singleDayEvents),
+  rangeEvent: one(rangeEvents),
+}));
+
+export const rangeEventsRelations = relations(rangeEvents, ({ one }) => ({
+  event: one(events, {
+    fields: [rangeEvents.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const journalRelations = relations(journals, ({ one }) => ({
   users: one(user, {
     fields: [journals.userId],
     references: [user.id],
   }),
 }));
+
