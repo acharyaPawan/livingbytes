@@ -9,7 +9,7 @@ const tsOnlyConfigs = [
   files: ["**/*.{ts,tsx}"],
 }));
 
-export default [
+const config = [
   ...nextConfig,
   ...tsOnlyConfigs,
   {
@@ -40,3 +40,5 @@ export default [
     },
   },
 ];
+
+export default config;

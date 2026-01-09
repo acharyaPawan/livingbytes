@@ -22,11 +22,13 @@ export const metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout(
+  {
+    children,
+  }: {
+    children: React.ReactNode;
+  }
+) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -41,7 +43,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-        <TRPCReactProvider cookies={cookies().toString()}>
+        <TRPCReactProvider cookies={(await cookies()).toString()}>
             <EdgeStoreProvider>{children}</EdgeStoreProvider>
             <Toaster />
             {/* <ReactQueryDevtools initialIsOpen={false} /> */}        </TRPCReactProvider>
