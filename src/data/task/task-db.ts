@@ -53,10 +53,12 @@ export const getCachedCategorizedTask = (userId: string) => unstable_cache(async
               },
             },
             trackersTasksMap: {
-              columns: {},
+              columns: {
+              },
               with: {
                 tracker: {
                   columns: {
+                    id: true,
                     title: true,
                   },
                 },
