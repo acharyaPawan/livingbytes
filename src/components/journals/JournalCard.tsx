@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { format } from "date-fns";
 import { CalendarDays, NotebookPen, Paperclip, ScrollText } from "lucide-react";
 
 import type { JournalFeedEntry } from "@/data/journal/journal";
-import { formatJournalDate, journalPreview } from "@/shared/journal";
+import {
+  formatJournalDate,
+  formatJournalDateLong,
+  journalPreview,
+} from "@/shared/journal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +60,7 @@ export const JournalCard = ({ entry }: Props) => {
         </p>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>
-            {format(new Date(entry.date), "PPPP")} ·{" "}
+            {formatJournalDateLong(entry.date)} ·{" "}
             {hasContent ? "Editable" : "Draft"}
           </span>
           {entry.fileUrl && (

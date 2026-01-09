@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
-import { format } from "date-fns";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -16,7 +15,7 @@ import Link from "next/link";
 
 import type { JournalFeedEntry } from "@/data/journal/journal";
 import useDebouncedUpdate from "@/hooks/use-debounced-update";
-import { formatJournalDate } from "@/shared/journal";
+import { formatJournalDate, formatJournalDateLong } from "@/shared/journal";
 import { api } from "@/trpc/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,7 +110,7 @@ export const JournalEntryEditor = ({ entry, highlightToday }: Props) => {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{format(new Date(entry.date), "PPPP")}</span>
+            <span>{formatJournalDateLong(entry.date)}</span>
             <span aria-hidden="true">•</span>
             <span>{statusLabel}</span>
           </div>

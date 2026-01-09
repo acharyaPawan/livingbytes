@@ -1,4 +1,4 @@
-import { endOfDay, format, startOfDay } from "date-fns";
+import { endOfDay, format, isValid, startOfDay } from "date-fns";
 import { z } from "zod";
 
 export const defaultJournalDate = () => startOfDay(new Date());
@@ -107,9 +107,19 @@ export const journalPreview = (content?: string | null, limit = 140) => {
   return trimmed.length > limit ? `${trimmed.slice(0, limit)}…` : trimmed;
 };
 
-export const formatJournalDate = (date: Date | string) => {
+const toValidDate = (date: Date | string) => {
   const normalized = typeof date === "string" ? new Date(date) : date;
-  return format(normalized, "EEE, MMM d");
+  return isValid(normalized) ? normalized : null;
+};
+
+export const formatJournalDate = (date: Date | string) => {
+  const normalized = toValidDate(date);
+  return normalized ? format(normalized, "EEE, MMM d") : "Unknown date";
+};
+
+export const formatJournalDateLong = (date: Date | string) => {
+  const normalized = toValidDate(date);
+  return normalized ? format(normalized, "PPPP") : "Unknown date";
 };
 
 export const journalTags = (userId: string) => [
@@ -128,4 +138,3 @@ export const journalDateRange = (value?: { from?: Date; to?: Date }) => {
     to: to ? endOfDay(to) : undefined,
   };
 };
-
