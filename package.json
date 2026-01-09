@@ -15,9 +15,9 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^0.7.0",
-    "@blocknote/core": "^0.12.4",
-    "@blocknote/mantine": "^0.14.6",
-    "@blocknote/react": "^0.12.4",
+    "@blocknote/core": "^0.46.0",
+    "@blocknote/mantine": "^0.46.0",
+    "@blocknote/react": "^0.46.0",
     "@edgestore/react": "^0.1.6",
     "@edgestore/server": "^0.1.6",
     "@hookform/resolvers": "^5.2.2",

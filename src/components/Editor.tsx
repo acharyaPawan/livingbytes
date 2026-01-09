@@ -1,12 +1,9 @@
 "use client";
 
 import type { BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import {
-  BlockNoteView,
-  useCreateBlockNote,
-} from "@blocknote/react";
+import { useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/core/fonts/inter.css";
-import "@blocknote/react/style.css";
 import "@blocknote/mantine/style.css";
 import { useTheme } from "next-themes";
 
