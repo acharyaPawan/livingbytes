@@ -283,7 +283,10 @@ export function TrackerForm({ closeFunc, className }: { closeFunc: () => void, c
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className={cn("w-2/3 space-y-6"), className}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className={cn("w-2/3 space-y-6", className)}
+      >
         <FormField
           control={form.control}
           name="title"

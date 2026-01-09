@@ -4,11 +4,12 @@ import db from "@/server/db";
 import { journals } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 
-export const JournalPageById = async ({
-  params,
-}: {
-  params: { journalId: string };
-}) => {
+export const JournalPageById = async (
+  props: {
+    params: Promise<{ journalId: string }>;
+  }
+) => {
+  const params = await props.params;
   const session = await getServerAuthSession();
   if (!session) {
     return <div>Not authorized</div>;

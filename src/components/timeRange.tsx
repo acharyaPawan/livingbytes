@@ -1,5 +1,5 @@
 import React from "react";
-import { useFormContext, Controller } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
 interface TimePickerProps {
   control: any;
@@ -8,23 +8,25 @@ interface TimePickerProps {
 }
 
 const TimePicker: React.FC<TimePickerProps> = ({ control, name, className }) => {
-  const { field, fieldState } = useFormContext().control.register(name);
-
   return (
     <div className={className}>
       <label>Time:</label>
       <Controller
-        render={({ field }) => (
-          <input
-            type="time"
-            value={field.value}
-            onChange={(e) => field.onChange(e.target.value)}
-          />
-        )}
         control={control}
         name={name}
+        render={({ field, fieldState }) => (
+          <>
+            <input
+              type="time"
+              value={field.value ?? ""}
+              onChange={(e) => field.onChange(e.target.value)}
+            />
+            {fieldState.error && (
+              <p className="text-red-500">{fieldState.error.message}</p>
+            )}
+          </>
+        )}
       />
-      {fieldState.error && <p className="text-red-500">{fieldState.error.message}</p>}
     </div>
   );
 };

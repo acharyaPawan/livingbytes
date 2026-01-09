@@ -8,7 +8,7 @@ export const WrapperComponent = (props: {randomNo: Number}) => {
   return (
     <div >
       <h1>{isCollapsed}</h1>
-      <span>Random no is: {String(randomNo)}</span>
+      <span>Random no is: {String(props.randomNo)}</span>
     </div>
   )
 }

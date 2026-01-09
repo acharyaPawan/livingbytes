@@ -128,9 +128,9 @@ export const taskRouter = createTRPCRouter({
     const endTime = performance.now()
     const elapsedTime = endTime - startTime;
     console.log(elapsedTime, 'in ms')
-    const resr: Category[] = res.rows as unknown as Category[]
-    console.log('resr is ', resr[0]?.tasks[0])
-    return resr as Category[]        
+    const resr = res as unknown as Category[]
+    console.log('resr is ', resr[0]?.tasks?.[0])
+    return resr        
 })
 })
 

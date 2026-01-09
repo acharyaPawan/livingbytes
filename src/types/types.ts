@@ -1,4 +1,3 @@
-import { formdata } from "@/components/tasks/AddNewForm";
 import { formdata as formdataFromEdit } from "@/components/tasks/EditTaskForm";
 
 export type TaskStatus = "Not Started" | "In Progress" | "Finished" | "Paused" | "Scheduled" | "Expired";
@@ -51,15 +50,13 @@ export interface Task {
   priority: number;
   locked: boolean;
   flexible: boolean;
-  // priorityLabel: PriorityLabels;
+  priorityLabel?: PriorityLabels;
   createdOn: Date;
   expiresOn: Date;
   completedOn: Date;
   viewAs: ViewAsType;
-  // specialLabels: string[];
+  specialLabels?: string[];
   remark: string;
-  // subtasks: Subtask[];
-  // tracker: Tracker[];
   subtasks: any;
   tracker: any;
   categoryId: string;

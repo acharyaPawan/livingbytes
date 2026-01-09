@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useTransition } from "react";
-import { useForm, useFormState } from "react-hook-form";
+import { useForm, useFormState, type Resolver } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
 
@@ -32,7 +32,6 @@ import { useState } from "react";
 import { CalendarIcon, Plus } from "lucide-react";
 import { z } from "zod";
 import { createNewSubtask, createNewTask } from "@/app/actions";
-import { revalidatePath } from "next/cache";
 import { useRouter } from "next/navigation";
 import { TaskType } from "@/types/types";
 import { priorityLabels } from "@/server/db/schema";
@@ -115,7 +114,9 @@ export function AddNewForm({
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchemaAddNewTask>>({
-    resolver: zodResolver(formSchemaAddNewTask),
+    resolver: zodResolver(formSchemaAddNewTask) as Resolver<
+      z.infer<typeof formSchemaAddNewTask>
+    >,
     defaultValues: {
       title: "",
       description: "",
@@ -125,7 +126,7 @@ export function AddNewForm({
       viewAs: "Checkbox",
       category: "Not Specified",
       expiresOn: new Date(new Date().setHours(23, 59, 59, 999)),
-      scheduledOn: new Date(new Date().setHours(25, 0, 0, 0))
+      scheduledOn: new Date(new Date().setHours(25, 0, 0, 0)),
     },
   });
 
