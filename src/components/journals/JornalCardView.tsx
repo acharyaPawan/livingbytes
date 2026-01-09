@@ -1,7 +1,7 @@
-import { type JournalType } from "@/app/(site)/(routes)/journals/page";
+import type { JournalFeedEntry } from "@/data/journal/journal";
 import ButtonWithRoute from "./ButtonWithRoute";
 
-const JournalCardView = ({ journal }: { journal: JournalType }) => {
+const JournalCardView = ({ journal }: { journal: JournalFeedEntry }) => {
   // const link = `/journal/${Journal}`
   return (
     <>

@@ -1,34 +1,34 @@
 "use client";
 
-import { fetchMoreJournals } from "@/actions/journals";
-import { type JournalType } from "@/app/(site)/(routes)/journals/page";
 import { useEffect, useRef, useState } from "react";
+
+import { fetchMoreJournals } from "@/actions/journals";
+import type { JournalFeedEntry } from "@/data/journal/journal";
+
 import JournalCardView from "./JornalCardView";
 
 export default function PostListInfinite({
   initialJournals,
 }: {
-  initialJournals: JournalType[];
+  initialJournals: JournalFeedEntry[];
 }) {
   const [cursor, setCursor] = useState<Date>(new Date());
-  const [journals, setJournals] = useState<JournalType[]>(initialJournals);
+  const [journals, setJournals] = useState<JournalFeedEntry[]>(initialJournals);
   const [hasMoreJournals, setHasMoreJournals] = useState<boolean>(true);
 
   const scrollTrigger = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // setting up initialCursor
     const initialCursorDate =
       initialJournals?.length > 0 && initialJournals[initialJournals.length - 1]?.date
-        ? initialJournals[initialJournals.length - 1]?.date
+        ? new Date(initialJournals[initialJournals.length - 1]!.date)
         : new Date();
-    if (typeof initialCursorDate !== "undefined") {
+    if (initialCursorDate) {
       setCursor(initialCursorDate);
     }
   }, [initialJournals]);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/require-await
     if (!window?.IntersectionObserver) {
       return;
     }
@@ -52,10 +52,8 @@ export default function PostListInfinite({
       observer.observe(scrollTrigger.current);
     }
 
-    // Cleanup
     return () => {
       if (scrollTrigger.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         observer.unobserve(scrollTrigger.current);
       }
     };
@@ -64,29 +62,26 @@ export default function PostListInfinite({
 
   const loadMoreJournals = async () => {
     if (hasMoreJournals) {
-      const fetchedJournals: JournalType[] = await fetchMoreJournals(cursor);
-      console.log("fetched inside");
+      const fetchedJournals: JournalFeedEntry[] = await fetchMoreJournals(cursor);
 
-      if (fetchMoreJournals.length === 0) {
+      if (fetchedJournals.length === 0) {
         setHasMoreJournals(() => false);
         return;
       }
 
-      setJournals((journals) => [...journals, ...fetchedJournals]);
-      //update cursor
+      setJournals((current) => [...current, ...fetchedJournals]);
       const newCursor = journals[journals.length - 1]?.date;
-      if (typeof newCursor === "undefined" || newCursor === undefined) {
-        console.log("cursor is undefined");
+      if (!newCursor) {
         setHasMoreJournals(false);
         return;
       }
-      setCursor(newCursor);
+      setCursor(new Date(newCursor));
     }
   };
 
   return (
     <div>
-      <div id="scrollArea" className="flex flex-col gap-2 w-56">
+      <div id="scrollArea" className="flex w-56 flex-col gap-2">
         {journals.map((j) => {
           return <JournalCardView key={j.id} journal={j} />;
         })}

@@ -1,67 +1,62 @@
 "use client";
 
-import InputWithButton from "@/components/journals/InputForTitle";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
+import { Loader2, RefreshCcw, Sparkles } from "lucide-react";
+
+import { JournalEntryEditor } from "@/components/journals/JournalEntryEditor";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import useDebouncedUpdate from "@/hooks/use-debounced-update";
 import { api } from "@/trpc/react";
-import dynamic from "next/dynamic";
-import { useMemo, useEffect } from "react";
 
 export default function TodaysJournal() {
-  const Editor = useMemo(
-    () => dynamic(() => import("@/components/Editor"), { ssr: false }),
-    [],
-  );
-
-  // Fetch Today's Journal
   const response = api.journal.retrieveTodaysDocument.useQuery();
-  const update = api.journal.update.useMutation().mutate;
-  const journal = response?.data;
 
-  const handleDebouncedUpdate = (newContent: string) => {
-    if (journal?.id) {
-      update({
-        id: journal?.id,
-        content: newContent,
-      });
-    }
-  };
-
-  const debouncedUpdate = useDebouncedUpdate(handleDebouncedUpdate, 5000);
-
-  if (response.isLoading || !journal) {
+  if (response.isLoading || !response.data) {
     return (
-      <div>
-        <div className="mx-auto mt-10 md:max-w-3xl lg:max-w-4xl">
-          <div className="space-y-4 pl-8 pt-4">
-            <Skeleton className="h-14 w-[50%]" />
-            <Skeleton className="h-14 w-[80%]" />
-            <Skeleton className="h-14 w-[40%]" />
-            <Skeleton className="h-14 w-[60%]" />
-          </div>
-        </div>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Today&apos;s journal
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <span>Date: </span>
-        <span>{journal.date.toDateString()}</span>
-        <InputWithButton journalId={journal.id}>Title: </InputWithButton>
-        <span>{journal.title}</span>
-        <span>
-          editable: <Badge variant={"secondary"}>true</Badge>
-        </span>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Daily practice</p>
+          <div className="flex items-center gap-2 text-xl font-semibold">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span>Today&apos;s Journal</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Auto-created and ready to capture highlights, blockers, and wins.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          onClick={() => response.refetch()}
+          disabled={response.isFetching}
+        >
+          {response.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          Refresh
+        </Button>
       </div>
-      <Editor
-        onChange={debouncedUpdate}
-        initialContent={journal?.content ?? "Loading..."}
-        editable={true}
-      />
+
+      <JournalEntryEditor entry={response.data} highlightToday />
     </div>
   );
 }

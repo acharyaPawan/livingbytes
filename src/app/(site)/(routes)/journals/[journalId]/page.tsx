@@ -1,49 +1,29 @@
-import JournalViewById from "@/components/journals/JournalView";
-import { getServerAuthSession } from "@/server/auth";
-import db from "@/server/db";
-import { journals } from "@/server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
 
-export const JournalPageById = async (
-  props: {
-    params: Promise<{ journalId: string }>;
-  }
-) => {
-  const params = await props.params;
-  const session = await getServerAuthSession();
-  if (!session) {
-    return <div>Not authorized</div>;
-  }
-  let journalById
-  try {
-    journalById = await db.query.journals.findFirst({
-    where: and(
-      eq(journals.id, params.journalId), eq(journals.userId, session.user.id),
-    ),
-    columns: {
-      id: true,
-      title: true,
-      description: true,
-      content: true,
-      date: true
-    }
-  });
-} catch {
-  return null
-}
-  if (!journalById) {
-    return (
-      <div>
-        No journal by Id.
-      </div>
-    )
-  }
+import { JournalEntryEditor } from "@/components/journals/JournalEntryEditor";
+import { getJournalEntry } from "@/data/journal/journal";
 
-  // console.log("1", "response is: ", journalById)
+type Params = {
+  journalId: string;
+};
+
+const JournalDetailPage = async ({
+  params,
+}: {
+  params: Promise<Params>;
+}) => {
+  const { journalId } = await params;
+  const entry = await getJournalEntry(journalId).catch(() => null);
+
+  if (!entry) {
+    notFound();
+  }
 
   return (
-    <JournalViewById journal={journalById} />
+    <div className="space-y-6">
+      <JournalEntryEditor entry={entry} />
+    </div>
   );
 };
 
-export default JournalPageById;
+export default JournalDetailPage;

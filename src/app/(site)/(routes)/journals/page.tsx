@@ -1,33 +1,14 @@
-import { getInitialJournals } from "@/actions/journals";
-import ButtonWithRoute from "@/components/journals/ButtonWithRoute";
-import JournalListInfinite from "@/components/journals/JournalListInfinite";
-import { type journals } from "@/server/db/schema";
-import { type InferSelectModel } from "drizzle-orm";
-
-export type JournalType = InferSelectModel<typeof journals>;
+import { JournalBoard } from "@/components/journals/JournalBoard";
+import { getJournalBoardData } from "@/data/journal/journal";
 
 const JournalsDashboard = async () => {
-  const initialJournals = await getInitialJournals();
-  if (initialJournals?.length == 0 && !initialJournals[initialJournals.length - 1]?.date) {
-    return (
-      <div>
-        Nothing in the database, create journals to view here
-        <div>
-        <ButtonWithRoute href="/journals/today">Write Todays Journal</ButtonWithRoute>
-        </div>
-      </div>
-    );
-  }
+  const { page, stats } = await getJournalBoardData();
+  const initialPage = {
+    items: page.items,
+    nextCursor: page.nextCursor ? page.nextCursor.toISOString() : null,
+  };
 
-  return (
-    <div>
-      <div>
-        <ButtonWithRoute href="/journals/today">Write Todays Journal</ButtonWithRoute>
-      </div>
-      <p>Journals List</p>
-      <JournalListInfinite initialJournals={initialJournals} />
-    </div>
-  );
+  return <JournalBoard initialPage={initialPage} stats={stats} />;
 };
 
 export default JournalsDashboard;

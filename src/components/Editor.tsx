@@ -52,12 +52,11 @@ function Editor({ onChange, initialContent, editable }: EditorProps) {
       <BlockNoteView
         editor={editor2}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
-        editable={editable}     
-        // filePanel={true}
+        editable={editable}
         onChange={() => {
           onChange(JSON.stringify(editor2.document, null, 2));
         }}
-        className="h-96 overflow-y-scroll"
+        className="min-h-[420px] max-h-[70vh] overflow-y-auto"
       />
     // </div>
   );
