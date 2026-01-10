@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { EventFeedEntry } from "@/data/event/event";
@@ -14,7 +13,6 @@ const RenderEventsItem = ({
 }: {
   event: EventFeedEntry;
 }) => {
-  const [isRange, setIsRange] = useState(false);
   const router = useRouter();
 
   const handleEventDelete = async () => {
@@ -26,9 +24,7 @@ const RenderEventsItem = ({
     }
   };
 
-  useEffect(() => {
-    setIsRange(!!event.rangeEvent); // Set isRange based on the presence of rangeEvent
-  }, [event.rangeEvent]);
+  const isRange = !!event.rangeEvent;
 
   return (
     <div>
