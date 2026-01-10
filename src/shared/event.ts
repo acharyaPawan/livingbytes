@@ -136,16 +136,17 @@ export const normalizeTagInput = (value?: string | null) => {
 };
 
 export const eventRange = (event: EventLike) => {
-  const start =
-    event.eventNature === "Range"
-      ? toValidDate(event.startDate)
-      : toValidDate(event.eventDate);
-  const end =
-    event.eventNature === "Range"
-      ? toValidDate(event.endDate)
-      : toValidDate(event.eventDate);
+  if (event.eventNature === "Range") {
+    const start = toValidDate(event.startDate);
+    const end = toValidDate(event.endDate);
+    return {
+      start: start ? startOfDay(start) : null,
+      end: end ? endOfDay(end) : null,
+    };
+  }
 
-  return { start, end };
+  const single = toValidDate(event.eventDate);
+  return { start: single, end: single };
 };
 
 export const eventSortDate = (event: EventLike) => {
