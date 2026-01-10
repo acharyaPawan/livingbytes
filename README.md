@@ -19,6 +19,27 @@ Livingbyte is a personal operating system for planning and reflection. It brings
 - Tailwind CSS
 - BlockNote editor (journals)
 
+## 📸 Project Gallery
+
+<p align="center">
+  <img src="screenshots/home-screen-view.png" width="30%" />
+  <img src="screenshots/journals-view.png" width="30%" />
+  <img src="screenshots/specific-journal-view.png" width="30%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/create-new-task-view.png" width="30%" />
+  <img src="screenshots/task-in-tasks-view.png" width="30%" />
+  <img src="screenshots/trackers-view.png" width="30%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/add-tracker-view.png" width="30%" />
+  <img src="screenshots/events-view.png" width="30%" />
+  <img src="screenshots/create-new-event-view.png" width="30%" />
+</p>
+
+
 ## Local setup
 1. Install dependencies
    ```bash
