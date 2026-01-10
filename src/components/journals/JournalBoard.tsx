@@ -8,7 +8,6 @@ import {
   Loader2,
   RefreshCcw,
   Search,
-  Sparkles,
   StickyNote,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -125,10 +124,7 @@ export const JournalBoard = ({ initialPage, stats }: Props) => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Journals</p>
-          <div className="flex items-center gap-2 text-2xl font-semibold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>Story of your work</span>
-          </div>
+          <div className="text-2xl font-semibold">Story of your work</div>
           <p className="text-sm text-muted-foreground">
             Capture daily context, attach artifacts, and keep progress tied to your tasks.
           </p>

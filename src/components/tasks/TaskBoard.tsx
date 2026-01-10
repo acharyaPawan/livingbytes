@@ -19,7 +19,7 @@ import {
   Play,
   RefreshCcw,
   Search,
-  Sparkles,
+  Hash,
 } from "lucide-react";
 
 import { updateStatus, deleteFunctionality } from "@/app/actions";
@@ -214,10 +214,7 @@ export const TaskBoard = ({ categories }: TaskBoardProps) => {
           <p className="text-sm uppercase tracking-wide text-muted-foreground">
             Task control center
           </p>
-          <div className="flex items-center gap-2 text-2xl font-semibold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>Tasks · Focus Mode</span>
-          </div>
+          <div className="text-2xl font-semibold">Tasks - Focus Mode</div>
           <p className="text-sm text-muted-foreground">
             Keep active work visible, scheduled items ready, and overdue items honest.
           </p>
@@ -379,7 +376,7 @@ const SummaryRow = ({
     {
       label: "Total",
       value: summary.total,
-      icon: <Sparkles className="h-4 w-4" />,
+      icon: <Hash className="h-4 w-4" />,
     },
   ];
 
