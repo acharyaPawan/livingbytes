@@ -8,7 +8,6 @@ import {
   Loader2,
   RefreshCcw,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import type { DateRange } from "react-day-picker";
@@ -121,10 +120,7 @@ export const EventBoard = ({ initialPage, stats }: Props) => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Events</p>
-          <div className="flex items-center gap-2 text-2xl font-semibold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>Stay ahead of every milestone</span>
-          </div>
+          <div className="text-2xl font-semibold">Stay ahead of every milestone</div>
           <p className="text-sm text-muted-foreground">
             Track single-day moments or multi-day ranges and keep your tasks aligned.
           </p>

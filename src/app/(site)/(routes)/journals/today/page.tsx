@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, RefreshCcw, Sparkles } from "lucide-react";
+import { Loader2, RefreshCcw } from "lucide-react";
 
 import { JournalEntryEditor } from "@/components/journals/JournalEntryEditor";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,7 @@ export default function TodaysJournal() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Today&apos;s journal
-            </CardTitle>
+            <CardTitle className="text-lg">Today&apos;s journal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <Skeleton className="h-6 w-48" />
@@ -36,10 +33,7 @@ export default function TodaysJournal() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Daily practice</p>
-          <div className="flex items-center gap-2 text-xl font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span>Today&apos;s Journal</span>
-          </div>
+          <div className="text-xl font-semibold">Today&apos;s Journal</div>
           <p className="text-sm text-muted-foreground">
             Auto-created and ready to capture highlights, blockers, and wins.
           </p>
