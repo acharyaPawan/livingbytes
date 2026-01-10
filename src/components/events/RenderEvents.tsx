@@ -1,40 +1,30 @@
 "use client";
-import { resType } from "@/app/(site)/(routes)/events/page";
-import { Label } from "../ui/label";
-import { useEffect, useState } from "react";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { client } from "@/trpc/react";
+
 import { useRouter } from "next/navigation";
+
+import type { EventFeedEntry } from "@/data/event/event";
+import { client } from "@/trpc/react";
+import { Badge } from "../ui/badge";
+import { Label } from "../ui/label";
 import { DeleteAlertDialog } from "../shared/DeleteAlertDialog";
 
 const RenderEventsItem = ({
   event,
 }: {
-  event: resType extends (infer U)[] ? U : never;
+  event: EventFeedEntry;
 }) => {
-  const [isRange, setIsRange] = useState(false);
   const router = useRouter();
 
   const handleEventDelete = async () => {
     try {
-      const { data, error } = await client.event.deleteEvent.mutate({
-        eventId: event.id,
-      });
-      if (data) {
-        router.refresh();
-      }
-      if (error) {
-        throw new Error(`Server_Error_Delete:${error}`);
-      }
+      await client.event.remove.mutate({ eventId: event.id });
+      router.refresh();
     } catch (e: any) {
       throw new Error("Client_Error_Delete:", e);
     }
   };
 
-  useEffect(() => {
-    setIsRange(!!event.rangeEvent); // Set isRange based on the presence of rangeEvent
-  }, [event.rangeEvent]);
+  const isRange = !!event.rangeEvent;
 
   return (
     <div>
@@ -68,7 +58,7 @@ const RenderEventsItem = ({
   );
 };
 
-const RenderEvents = ({ events }: { events: resType }) => {
+const RenderEvents = ({ events }: { events: EventFeedEntry[] }) => {
   return (
     <>
       <div className="flex flex-col gap-2">

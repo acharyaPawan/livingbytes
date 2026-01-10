@@ -40,7 +40,6 @@ import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { Switch } from "../ui/switch";
 import { revalidateTagsAction } from "@/actions/utils";
-import { formSchema } from "../events/AddNewEvent";
 import { formSchemaAddNewTask } from "@/app/schemas";
 
 
